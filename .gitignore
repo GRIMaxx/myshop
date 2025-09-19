@@ -1,0 +1,11 @@
+/vendor/
+/node_modules/
+/.env
+/storage/*
+!/storage/.gitkeep
+/bootstrap/cache/*
+/public/hot
+/public/storage
+/.idea
+.DS_Store
+.env.local
