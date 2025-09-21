@@ -147,9 +147,13 @@ return [
         'client' => env('REDIS_CLIENT', 'phpredis'),
 
         'options' => [
-            'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
+            'cluster' => env('REDIS_CLUSTER', false), // Изменил
+            'prefix' => env('REDIS_PREFIX', ''),      // Изменил
             'persistent' => env('REDIS_PERSISTENT', false),
+            // Добавил
+            'scheme'     => env('REDIS_SCHEME', 'tcp'),
+            'read_timeout' => env('REDIS_READ_TIMEOUT', 60),
+            'timeout' => env('REDIS_TIMEOUT', 5),
         ],
 
         'default' => [
@@ -166,6 +170,7 @@ return [
         ],
 
         'cache' => [
+            'prefix'    => env('REDIS_CACHE_PREFIX', ''), // Добавил
             'url' => env('REDIS_URL'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
             'username' => env('REDIS_USERNAME'),
@@ -176,6 +181,24 @@ return [
             'backoff_algorithm' => env('REDIS_BACKOFF_ALGORITHM', 'decorrelated_jitter'),
             'backoff_base' => env('REDIS_BACKOFF_BASE', 100),
             'backoff_cap' => env('REDIS_BACKOFF_CAP', 1000),
+        ],
+        'queue' => [
+            'prefix'    => env('REDIS_QUEUE_PREFIX', ''),
+            'url'       => env('REDIS_URL'),
+            'host'      => env('REDIS_HOST', '127.0.0.1'),
+            //'username'  => env('REDIS_USERNAME'),
+            'password'  => env('REDIS_PASSWORD'),
+            'port'      => env('REDIS_PORT', '6379'),
+            'database'  => env('REDIS_QUEUE_DB', '2'),
+        ],
+        'session' => [
+            'prefix'    => env('REDIS_SESSION_PREFIX', ''),
+            'url'       => env('REDIS_URL'),
+            'host'      => env('REDIS_HOST', '127.0.0.1'),
+            'username'  => env('REDIS_USERNAME'),
+            'password'  => env('REDIS_PASSWORD'),
+            'port'      => env('REDIS_PORT', '6379'),
+            'database'  => env('REDIS_DB', '0'),
         ],
 
     ],

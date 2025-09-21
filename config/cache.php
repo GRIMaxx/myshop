@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_STORE', 'database'),
+    'default' => env('CACHE_STORE', env('CACHE_DRIVER', 'file')), // Изменил
 
     /*
     |--------------------------------------------------------------------------
@@ -71,6 +71,7 @@ return [
             ],
         ],
 
+        // Ок 'проверенно'
         'redis' => [
             'driver' => 'redis',
             'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
