@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use App\Contracts\Cache\CacheServiceInterface;
-
+use App\Contracts\Setting\SettingServiceInterface;
 //use Illuminate\Support\Facades\Config;
 
-class SettingService
+class SettingService implements SettingServiceInterface
 {
     protected string $cacheKey = 'settings';  // Имя сервиса или группы (список имен в кеше --> PREFIXES)
 
@@ -25,36 +25,94 @@ class SettingService
     ) {}
 
     /**
-        Добавить новую настройку.
-
-        Группы:
-        1 = config (.\config\settings.php)
-        2 = lang   (.\lang\{locale}\settings\general.php)
-        3 = db     (settings table)
-        ---
-        Примеры использования:
-
-        Группа 1 (config) → сохранит в config/settings.php
-        $service->addSetting('site_name', 'MyShop', 1);
-
-        Группа 2 (lang) → сохранит перевод в lang/ru/settings/general.php
-        $service->addSetting('site_name', 'Магазин', 2, lang: 'ru');
-
-        Группа 2 (lang) → без указания языка, дефолт = en
-        $service->addSetting('site_name', 'Shop', 2);
-
-        Группа 3 (db) → сохранит в таблицу settings
-        $service->addSetting('items_per_page', 20, 3, 'int');
-        ---
-        Аргументы:
-        @param string  $key         Уникальный ключ
-        @param mixed   $value       Значение (array/object → ok, запрещены ресурсы/closures)
-        @param int     $group       Группа (1=config, 2=lang, 3=db)
-        @param string  $type        Тип данных (string, int, bool, json и т.д.)
-        @param ?string $description Описание ключа (для админки/документации)
-        @param string  $environment Окружение (production/dev/stage)
-        @param ?int    $updatedBy   Кто добавил (id пользователя) Автор изменений: в реальном маркетплейсе важно знать, кто поменял настройку.
-        @param ?string $lang        Язык (только для группы 2, default = en)
+     * Добавить новую настройку.
+     * ----------------------------------------------------------------------------
+     * Группы:
+     * 1 = config (.\config\settings.php)                  - Используется для технических параметров приложения.
+     * 2 = lang   (.\lang\{locale}\settings\general.php)   - Используется для переводов (строки интерфейса).
+     * 3 = db     (settings table)                         - Используется для динамических/пользовательских настроек.
+     * ----------------------------------------------------------------------------
+     * Допустимые типы Группа 1:
+     *
+     * string (например, 'site_name' => 'MyShop')
+     * int ('items_per_page' => 20)
+     * bool ('debug' => true)
+     * array (например, 'currencies' => ['USD', 'EUR'])
+     * не стоит хранить object — конфиг читается при загрузке приложения, там должны быть простые структуры.
+     *
+     * Примеры использования:
+     *
+     * $service->addSetting('site_name', 'MyShop', 1);                        - string
+     * $service->addSetting('items_per_page', 20, 1, 'int');                  - int
+     * $service->addSetting('debug_mode', true, 1, 'bool');                   - bool
+     * $service->addSetting('currencies', ['USD', 'EUR', 'UAH'], 1, 'array'); - array
+     * -------------------------------------------------------------------------------------
+     * Допустимые типы Группа 2:
+     *
+     * string (99% случаев: 'site_name' => 'Магазин')
+     * array (например, 'greeting' => ['morning' => 'Доброе утро', 'evening' => 'Добрый вечер'])
+     * int/bool/object сюда не подходят, потому что система переводов в Laravel ожидает именно текст.
+     * $lang обязателен (если не передан — дефолт en).
+     *
+     *  Примеры использования:
+     *
+     * -- string (основной вариант)
+     *
+     * $service->addSetting('site_name', 'Магазин', 2, 'string', lang: 'ru');
+     * $service->addSetting('site_name', 'Shop', 2, 'string', lang: 'en');
+     *
+     * -- array (словарь переводов внутри одного ключа)
+     *
+     * $service->addSetting('greeting', [
+     *      'morning' => 'Доброе утро',
+     *      'evening' => 'Добрый вечер',
+     * ], 2, 'array', lang: 'ru');
+     *
+     * $service->addSetting('greeting', [
+     *      'morning' => 'Good morning',
+     *      'evening' => 'Good evening',
+     * ], 2, 'array', lang: 'en');
+     *
+     * Дополнительно для группы 2 если создаються масивы:
+     * -вложенность поддерживает до 3 уровней (можно и 50 но это мусорка)
+     * -если general.php пуст → создаст массив с твоим ключом,
+     * -если в general.php уже есть другие настройки → они останутся, добавится только новый $key.
+     *-------------------------------------------------------------------------------------------
+     * Допустимые типы Группа 3:
+     *
+     * string, int, bool
+     * array/object → сериализация в JSON (подходит для сложных структур)
+     * resource/closure запрещены (не сериализуются).
+     * $type критичен (string/int/bool/json и т.д.), потому что от него зависит валидация и каст при чтении.
+     *
+     * Примеры использования:
+     *
+     * $service->addSetting('support_email', 'support@myshop.com', 3);        - string
+     * $service->addSetting('max_upload_size', 10485760, 3, 'int'); // 10 MB  - int
+     * $service->addSetting('registration_enabled', false, 3, 'bool');        - bool
+     *
+     * array (сериализуется в JSON)
+     * $service->addSetting('payment_methods', [
+     *      'paypal' => true,
+     *      'stripe' => false,
+     * ], 3, 'json');
+     *
+     * object (сериализуется в JSON)
+     * $service->addSetting('company_info', (object)[
+     *      'name' => 'MyShop Inc.',
+     *      'country' => 'USA',
+     * ], 3, 'json');
+     *
+     * ---
+     * Аргументы:
+     * @param string  $key         Уникальный ключ
+     * @param mixed   $value       Значение (array/object → ok, запрещены ресурсы/closures)
+     * @param int     $group       Группа (1=config, 2=lang, 3=db)
+     * @param string  $type        Тип данных (string, int, bool, json и т.д.)
+     * @param ?string $description Описание ключа (для админки/документации)
+     * @param string  $environment Окружение (production/dev/stage)
+     * @param ?int    $updatedBy   Кто добавил (id пользователя) Автор изменений: в реальном маркетплейсе важно знать, кто поменял настройку.
+     * @param ?string $lang        Язык (только для группы 2, default = en)
     */
      public function addSetting(string $key,mixed $value,int $group,string $type = 'string',?string $description = null,string $environment = 'production',?int $updatedBy = null,?string $lang= null): void {
 
@@ -246,20 +304,51 @@ class SettingService
 
             // Путь до нужного файла (general.php - этот файл строго для этого сервиса)
             $path = lang_path("{$lang}/settings/general.php");
+            $dir  = dirname($path);
+
+            // Проверяем и создаём каталог если нужно
+            if (!is_dir($dir)) {
+                if (!mkdir($dir, 0775, true) && !is_dir($dir)) {
+                    throw new \RuntimeException("Failed to create directory: {$dir}");
+                }
+            }
+
+            // Если файла нет – создаём пустой
+            if (!file_exists($path)) {
+                file_put_contents($path, "<?php\n\nreturn [];\n");
+            }
 
             // Подгружаем текущие значения
-            $settings = file_exists($path) ? include $path : [];
+            $settings = include $path;
 
-            // обновляем или добавляем ново
+            // Если вдруг кто-то руками положит не array в general.php, то $settings принудительно будет массивом.
+            if (!is_array($settings)) {
+                $settings = [];
+            }
+
+            // Обновляем или добавляем новое значение
             // Пример что должно получиться:
             // return [
             //	 'name_site' => 'Морковь',
             // ];
             $settings[$key] = $value;
 
-            // сохраняем файл обратно
-            $content = "<?php\n\nreturn " . var_export($settings, true) . ";\n";
+            // Сохраняем файл обратно в синтаксисе PHP 5.4+
+            $content = "<?php\n\nreturn " . $this->exportArray($settings) . ";\n";
             file_put_contents($path, $content);
+
+            // для отладки
+            if (file_put_contents($path, $content) === false) {
+                Log::error("Не удалось записать файл настроек", ['path' => $path]);
+            } else {
+                Log::debug("Файл успешно записан", [
+                    'path' => $path,
+                    'content' => $content,
+                ]);
+            }
+
+            // Для отладки куда пишет проверка!
+            Log::debug("Подключаю lang файл", ['realpath' => realpath($path)]);
 
             Log::info("Setting '{$key}' saved to lang file [{$lang}/settings/general.php]", [
                 'registry_id' => $registryId,
@@ -275,6 +364,37 @@ class SettingService
             ]);
             throw $e;
         }
+    }
+
+    // Генерит «плотно» без табуляции
+    // Короче метод запишет компакно но не удобно читать глазами а это всеже конфиг по этому зделан новый ниже метод
+    //private function exportArray(array $array): string
+    //{
+    //    return str_replace(
+    //        ['array (', ')'],
+    //        ['[', ']'],
+    //        var_export($array, true)
+    //    );
+    //}
+    private function exportArray(array $array, int $level = 0): string
+    {
+        $indent = str_repeat('    ', $level);
+        $nextIndent = str_repeat('    ', $level + 1);
+
+        $lines = [];
+        foreach ($array as $key => $value) {
+            $keyStr = is_int($key) ? $key : "'" . addslashes($key) . "'";
+
+            if (is_array($value)) {
+                $valStr = $this->exportArray($value, $level + 1);
+                $lines[] = $nextIndent . $keyStr . ' => ' . $valStr;
+            } else {
+                $valStr = var_export($value, true);
+                $lines[] = $nextIndent . $keyStr . ' => ' . $valStr;
+            }
+        }
+
+        return "[\n" . implode(",\n", $lines) . "\n" . $indent . "]";
     }
 
     /**
