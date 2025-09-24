@@ -1,12 +1,17 @@
 <?php
 /**
-
-    Основные методы:
-        addSetting()        - Установить новые конфиг данные
-
-    1 Добавить все данные конфигов
-    2 Перейти к созданию считать даные и любой из 3 групп
-
+ * Обработка конфигурационных данных.
+ *
+ * Места хранения данных для работы сайта
+ *
+ * 1 группа - .\storage\settings.php                - тех. параметры и ссылки на ключи. (Здесь строго храним Статические которые очень редко меняються)
+ * 2 группа - .\lang\{locale}\settings\settings.php - тексты, которые напрямую связаны с конфигурацией сайта.
+ * 3 группа - Бд и таблица - settings               - динамических/пользовательских настроек.
+ * 4 группа - .\config\settings.php                 - Эта група предназначена для хранения смешаных даных dafsult
+ *
+ * Основные методы:
+ *      addSetting()        - Установить новые конфиг данные
+ *
  **/
 namespace App\Services\Setting;
 
@@ -120,11 +125,21 @@ class SettingService implements SettingServiceInterface
     */
      public function addSetting(string $key,mixed $value,int $group,string $type = 'string',?string $description = null,string $environment = 'production',?int $updatedBy = null,?string $lang= null): void
      {
-
-        // Здесьдобавить кеш ключей и знечения : $registryId
+        /** Кеш (имееться в виду 2 кеша 1-в рамках запроса,2-Redis)
+         *  Чтобы найти!
+         *  Перед каждым созданием нового конфига считуем :
+         *
+         *  key - Уникальный ключ, по этому ключу будем в будущем конретно получать настройки
+         *  group - Номер группы, по номеру группы в будушем будем определять где искать в каком файле из четырех груп
+         *  type - Тип данных которые храняться под этим ключом
+         *  is_active - Активна настройка да нет
+         *
+         *  Сам кеш для этих даных можно хранить в масиве напрмер [key => group] или в качестве строки 'key:group'
+         *  потом буду определяться пока как идея.
+        **/
 
          // Проверка допустимых групп
-        $allowedGroups = [1, 2, 3]; // (1=config, 2=lang, 3=db,...)
+        $allowedGroups = config('settings.group_configs'); // (1=config, 2=lang, 3=db,...)
         if (!in_array($group, $allowedGroups, true)) {
             Log::error("Указана некорректная группа при добавлении настройки", [
                 'key'         => $key,
@@ -319,14 +334,19 @@ class SettingService implements SettingServiceInterface
         int $registryId,               // ID под которым в таблице settings_registry краниться ключ от конфигурации
         string $key,                   // Уникальный ключ он дублируеться в таблице settings_registr.key
         mixed $value,                  // Значение (объекты -> массив) !запрещаем ресурсы/closures
-        string $lang = 'en'            // Язык перевода или default
+        string $lang = null,           // Язык перевода
     ): void {
 
         // !Добавить кеш (он должен быть отдельно для каждой группы чтобы при каждом изменении дергать ту группу в которой и были изменения а не все 3)
 
         try {
+
+            // Если язык не передан установить по умолчанию
+            $lang = $lang ?? config('settings.lang_trs');
+
             // Список поддерживаемых локалей
-            $locales = config('app.supported_locales', ['en', 'ru']);
+            $locales = config('settings.supported_locales');
+
             if (!in_array($lang, $locales, true)) {
                 Log::error("Unsupported locale '{$lang}' for setting '{$key}'");
                 throw new \Exception("Locale '{$lang}' is not supported");
@@ -450,7 +470,7 @@ class SettingService implements SettingServiceInterface
         }
     }
 
-    // -- End -- конез методов для создания конфиг данных --------------------------------------------------------------
+    // -- End -- конец методов для создания конфиг данных --------------------------------------------------------------
 
 
 

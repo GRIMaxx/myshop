@@ -29,7 +29,7 @@ class HomeController extends Controller
     {
          // Тестирую 2 групу создать или добавить но новую запись
 
-
+        //$this->setting->addSetting('site_name', 'MyShop', 1);
 
 
 
