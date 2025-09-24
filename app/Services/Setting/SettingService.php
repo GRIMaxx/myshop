@@ -22,7 +22,20 @@ use App\Contracts\Setting\SettingServiceInterface;
 
 class SettingService implements SettingServiceInterface
 {
-    protected string $cacheKey = 'settings';  // Имя сервиса или группы (список имен в кеше --> PREFIXES)
+    private const CACHE_SERVICE = 'settings'; // Имя сервиса/группы (список имен в кеше --> PREFIXES)
+    private const CACHE_TYPE    = 'config';   // Тип данных (список типов в кеше --> TYPEPREFIXES)
+
+    private const CKEY_KEY      = 'FGvbySD';  // Redis key
+
+    private const CKEYD_CONFIG  = 'MNSDRFG';  // Redis data_config
+    private const CKEYD_LANG    = 'VBGHTYV';  // Redis data_lang
+    private const CKEYD_DB      = 'NJKERTY';  // Redis data_lang
+
+    /**
+     * Времменый кеш в рамках запроса.
+     * Request Cache (in-memory, внутри PHP-запроса)
+     **/
+    protected static array $requestCache = [];
 
     public function __construct(
         private CacheServiceInterface $cache
@@ -125,20 +138,7 @@ class SettingService implements SettingServiceInterface
     */
      public function addSetting(string $key,mixed $value,int $group,string $type = 'string',?string $description = null,string $environment = 'production',?int $updatedBy = null,?string $lang= null): void
      {
-        /** Кеш (имееться в виду 2 кеша 1-в рамках запроса,2-Redis)
-         *  Чтобы найти!
-         *  Перед каждым созданием нового конфига считуем :
-         *
-         *  key - Уникальный ключ, по этому ключу будем в будущем конретно получать настройки
-         *  group - Номер группы, по номеру группы в будушем будем определять где искать в каком файле из четырех груп
-         *  type - Тип данных которые храняться под этим ключом
-         *  is_active - Активна настройка да нет
-         *
-         *  Сам кеш для этих даных можно хранить в масиве напрмер [key => group] или в качестве строки 'key:group'
-         *  потом буду определяться пока как идея.
-        **/
-
-         // Проверка допустимых групп
+        // Проверка допустимых групп
         $allowedGroups = config('settings.group_configs'); // (1=config, 2=lang, 3=db,...)
         if (!in_array($group, $allowedGroups, true)) {
             Log::error("Указана некорректная группа при добавлении настройки", [
@@ -185,6 +185,32 @@ class SettingService implements SettingServiceInterface
                 throw new \RuntimeException("Failed to insert setting '{$key}' into settings_registry");
             }
 
+            /**
+             * Установка Кеша (ключ)
+             * key       - Уникальный ключ, по этому ключу будем в будущем конретно получать настройки
+             * group     - Номер группы, по номеру группы в будушем будем определять где искать в каком файле из четырех груп
+             * type      - Тип данных которые храняться под этим ключом
+             * is_active - Активна настройка да нет
+             * is_locked -
+             * Ключ для этого кеша должен быть такой: cfg:s_cfg:FGvbySD (тестируем в Redis Insight)
+             * Возвращает метод true/false
+             **/
+            $success = $this->cache->put(
+                type:    self::CACHE_TYPE,                    // settings
+                key:     self::CKEY_KEY,                      // key
+                value:   [                                    // Передаем данные для хранения
+                    'key'    => $key,
+                    'group'  => $group,
+                    'type'   => $type,
+                    'active' => true,
+                    'locked' => false,
+                ],
+                ttl:     86400,                               // Время жизни если null то год
+                service: self::CACHE_SERVICE                  // Имя сервиса
+            );
+
+            self::$requestCache[$key] = $value;               // Сохранить во временный кеш (он здесь не работает это для теста!)
+
             // Сохраняем значение по группе
             match ($group) {
                 1 => $this->saveToConfig($key, $value),
@@ -197,9 +223,7 @@ class SettingService implements SettingServiceInterface
 
     /**
         Сохранение в storage/settings.php (группа 1).
-
         Установить конфиг даные в .\storage\settings.php
-
         $registryId - id ключа в Таблице settings_registry
         $value      - Значения ключа
      */
@@ -324,7 +348,6 @@ class SettingService implements SettingServiceInterface
 
     /**
         Сохранить перевод в resources/lang/{locale}/settings/general.php
-
         Пример что должно получиться:
         return [
           'name_site' => 'Морковь',
@@ -472,8 +495,126 @@ class SettingService implements SettingServiceInterface
 
     // -- End -- конец методов для создания конфиг данных --------------------------------------------------------------
 
+    //protected static array $requestCache = [];
+    // private CacheServiceInterface $cache
+
+    /**
+     *
+     * $requestCache - Кеш - его задача хранить все даные под ключем (в рамках запроса)
+     *
+     * ----
+     *
+     * Redis (ключ) - его задача хранить ключ -
+     * и номер группы + дополнительные даные.
+     * То есть грубо копирует таблицу - settings_registry
+     *
+     * ----
+     *
+     * Redis (данные) - его задача хранить даные ключей - то есть все типы даных под своим ключем -
+     * с учетом, что один ключ может иметь несколько значений.
+     *
+     *
+     *
+    **/
+    public function get(string $key, mixed $default = null, ?string $locale = null): mixed
+    {
+        // 1. Request Cache (Если найден ключ и данные сразу вернем)
+        if (isset(self::$requestCache[$key])) {
+            return self::$requestCache[$key];
+        }
+
+        // 2. Redis (ключ) - Попытка получить ключ и даные из кеша или регистра ключей - settings_registry
+        $meta = $this->redisGetKeyMeta($key);
+
+        //if (!$meta) {
+        //    $meta = $this->getRegistryMeta($key);
+        //    if (!$meta) {
+        //        return $this->handleNotFound($key, $default);
+        //    }
+        //    $this->redisSetKeyMeta($key, $meta);
+        //}
+
+        // Проверка активности
+        //if (empty($meta['is_active']) || !empty($meta['is_locked'])) {
+        //    $this->log("Key {$key} is inactive or locked");
+        //     return $this->handleNotFound($key, $default);
+        // }
+
+        // 3. Redis (данные)
+        //$value = $this->redisGetData($key);
+
+        //if ($value === null) {
+        //    // 4. Чтение из группы
+        //    $value = $this->fetchFromGroup($meta['group'], $key, $locale);
+        //
+        //    if ($value === null) {
+        //        return $this->handleNotFound($key, $default);
+        //    }
+         //
+        //    $this->redisSetData($key, $value);
+        //}
+
+        // 5. Сохраняем в Request Cache
+        //self::$requestCache[$key] = $value;
+
+        //return $value;
+    }
+
+    public function getOrFail(string $key, ?string $locale = null): mixed
+    {
+        return $this->get($key, '__FAIL__', $locale) === '__FAIL__'
+            ? throw new \RuntimeException("Setting {$key} not found")
+            : $this->get($key, null, $locale);
+    }
+
+    /**
+     * Получить метаданные ключа из Redis или settings_registry.
+     *
+     * Логика:
+     *  - Пробуем достать из Redis.
+     *  - Если нет → ищем в settings_registry.
+     *      - Нет в settings_registry → лог + вернуть null.
+     *      - Есть, но is_active=0 или is_locked=1 → лог + вернуть null.
+     *      - Нашли валидный → записать в Redis и вернуть.
+     *  - Если есть в Redis → проверить is_active / is_locked.
+     *      - Если не ок → лог + вернуть null.
+     *      - Если ок → вернуть.
+     */
+    protected function redisGetKeyMeta(string $key): ?array
+    {
+        try {
+            // Пробуем достать из Redis (key)
+            //$value = $this->cache->get(
+            //    self::CACHE_TYPE,       // Тип данных (translations, filters и т.д.) Каккой тип даных будет храниться например переводы или данные...
+           //     self::CKEY_KEY,          // Ключ записи
+           //     self::CACHE_SERVICE   // Сервис-источник (PREFIXES)
+           // );
+
+            //dd($value);
 
 
+            // filters(type):geo(service):countries(key)
+
+
+
+            dd(33);
+
+
+            return [];
+
+        } catch (\Throwable $e) {
+            // 3. На случай ошибки Redis или DB
+            $this->log("Error while getting meta for key {$key}: " . $e->getMessage());
+            return null;
+        }
+    }
+    protected function redisSetKeyMeta(string $key, array $meta): void { /* ... */ }
+    protected function getRegistryMeta(string $key): ?array { /* ... */ }
+    protected function redisGetData(string $key): mixed { /* ... */ }
+    protected function redisSetData(string $key, mixed $value): void { /* ... */ }
+    protected function fetchFromGroup(int $group, string $key, ?string $locale): mixed { /* ... */ }
+    protected function handleNotFound(string $key, mixed $default): mixed { return $default; }
+    protected function log(string $msg): void { /* ... */ }
 
 
 

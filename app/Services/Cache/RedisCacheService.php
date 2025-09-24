@@ -306,7 +306,7 @@ class RedisCacheService implements CacheServiceInterface
      *         key:     'countries',
      *         service: 'geo'
      *  );
-     * Возвращает пример: "filters:geo:countries"
+     * Возвращает пример: "filters:geo:countries"   (filters(type):geo(service):countries(key))
      * Вернёт: "flt:s_geo:countries"
      */
     public function buildKey(string $type, string $key, ?string $service = null): string
