@@ -1,20 +1,19 @@
 <?php
 /**
 
-    Основные методы
-    addSetting()
+    Основные методы:
+        addSetting()        - Установить новые конфиг данные
 
+    1 Добавить все данные конфигов
+    2 Перейти к созданию считать даные и любой из 3 групп
 
  **/
 namespace App\Services\Setting;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use App\Contracts\Cache\CacheServiceInterface;
 use App\Contracts\Setting\SettingServiceInterface;
-//use Illuminate\Support\Facades\Config;
 
 class SettingService implements SettingServiceInterface
 {
@@ -28,9 +27,15 @@ class SettingService implements SettingServiceInterface
      * Добавить новую настройку.
      * ----------------------------------------------------------------------------
      * Группы:
-     * 1 = config (.\config\settings.php)                  - Используется для технических параметров приложения.
+     * 1 = config (.\storage\settings.php)                 - Используется для технических параметров приложения.
      * 2 = lang   (.\lang\{locale}\settings\general.php)   - Используется для переводов (строки интерфейса).
      * 3 = db     (settings table)                         - Используется для динамических/пользовательских настроек.
+     *
+     * Важно! - правильное использования метода в рамках запроса только 1 метод если 2 и больше
+     * перезапишет значения на последнее в последнем методе
+     * Пример
+     * $this->setting->addSetting('site_name1', 'MyShop', 1);      <-- эти даные будут стерты
+     * $this->setting->addSetting('items_per_page', 20, 1, 'int'); <-- сотрет даные с ключем site_name1 и установит из этого метода и с этим ключем
      * ----------------------------------------------------------------------------
      * Допустимые типы Группа 1:
      *
@@ -102,7 +107,6 @@ class SettingService implements SettingServiceInterface
      *      'name' => 'MyShop Inc.',
      *      'country' => 'USA',
      * ], 3, 'json');
-     *
      * ---
      * Аргументы:
      * @param string  $key         Уникальный ключ
@@ -114,9 +118,12 @@ class SettingService implements SettingServiceInterface
      * @param ?int    $updatedBy   Кто добавил (id пользователя) Автор изменений: в реальном маркетплейсе важно знать, кто поменял настройку.
      * @param ?string $lang        Язык (только для группы 2, default = en)
     */
-     public function addSetting(string $key,mixed $value,int $group,string $type = 'string',?string $description = null,string $environment = 'production',?int $updatedBy = null,?string $lang= null): void {
+     public function addSetting(string $key,mixed $value,int $group,string $type = 'string',?string $description = null,string $environment = 'production',?int $updatedBy = null,?string $lang= null): void
+     {
 
-        // Проверка допустимых групп
+        // Здесьдобавить кеш ключей и знечения : $registryId
+
+         // Проверка допустимых групп
         $allowedGroups = [1, 2, 3]; // (1=config, 2=lang, 3=db,...)
         if (!in_array($group, $allowedGroups, true)) {
             Log::error("Указана некорректная группа при добавлении настройки", [
@@ -165,7 +172,7 @@ class SettingService implements SettingServiceInterface
 
             // Сохраняем значение по группе
             match ($group) {
-                1 => $this->saveToConfig($registryId, $value),
+                1 => $this->saveToConfig($key, $value),
                 2 => $this->saveToLang($registryId, $key, $value, $lang),
                 3 => $this->saveToDb($registryId, $value),
                 default => throw new \Exception("Unknown group {$group}"),
@@ -174,20 +181,23 @@ class SettingService implements SettingServiceInterface
     }
 
     /**
-        Сохранение в config/settings.php (группа 1).
+        Сохранение в storage/settings.php (группа 1).
 
-        Установить конфиг даные в .\config\settings.php
+        Установить конфиг даные в .\storage\settings.php
 
         $registryId - id ключа в Таблице settings_registry
         $value      - Значения ключа
      */
-    protected function saveToConfig(int $registryId, mixed $value): void
-    {
+    protected function saveToConfig(
+        string $key,                   // Уникальный ключ он дублируеться в таблице settings_registr.key
+        mixed $value
+    ): void {
+
         // !Добавить кеш (он должен быть отдельно для каждой группы чтобы при каждом изменении дергать ту группу в которой и были изменения а не все 3)
 
         // Получить путь
-        $path = config_path('settings.php');
-        $dir = dirname($path);
+        $path = storage_path('settings.php');
+        $dir  = dirname($path);
 
         // Убедимся, что директория существует (обычно да)
         if (!is_dir($dir)) {
@@ -201,6 +211,7 @@ class SettingService implements SettingServiceInterface
         $settings = [];
         if (file_exists($path)) {
             try {
+                //opcache_invalidate($path, true); // сброс кеша
                 $existing = include $path;
                 if (is_array($existing)) {
                     $settings = $existing;
@@ -216,17 +227,16 @@ class SettingService implements SettingServiceInterface
         // Нормализуем значение (объекты → массивы), запретим ресурсы/closure
         $value = $this->normalizeConfigValueForExport($value);
 
-        // Сохраняем под ключом registryId
-        // $registryId - подкаким id в таблице settings_registry граниться ключ итого конфига
-        // Пример как будет запись:
-        //  .\config\settings.php
-        //  return [
-        //          1 => json
-		//  ];
-        $settings[$registryId] = $value;
+        // для теста
+        //Log::info("Сохранить значения под ключем ----: ", ['key' => $key]);
+        //Log::info("Сохранить значения ----: ", ['value' => $value]);
+
+        // Сохраняем по ключу
+        $settings[$key] = $value;
 
         // Формируем содержимое файла PHP
-        $export = var_export($settings, true);
+        $export = $this->exportArray($settings);
+
         $content = "<?php\n\nreturn " . $export . ";\n";
 
         // Атомарная запись: temp файл → rename
@@ -247,7 +257,7 @@ class SettingService implements SettingServiceInterface
         // Попытка выставить корректные права (не критичная)
         @chmod($path, 0644);
 
-        Log::info("Setting saved to config", ['registry_id' => $registryId, 'path' => $path]);
+        Log::info("Setting saved to config", ['key' => $key, 'path' => $path]);
     }
 
     /**
@@ -275,6 +285,26 @@ class SettingService implements SettingServiceInterface
 
         // массивы/скаляры — возвращаем как есть
         return $value;
+    }
+
+    // Короче метод запишет компакно но не удобно читать глазами а это всеже конфиг по этому зделан новый ниже метод
+    private function exportArray(array $array, int $level = 0): string
+    {
+        $indent     = str_repeat('    ', $level);
+        $nextIndent = str_repeat('    ', $level + 1);
+
+        $lines = [];
+        foreach ($array as $key => $value) {
+            $keyStr = is_int($key) ? $key : "'" . addslashes($key) . "'";
+            if (is_array($value)) {
+                $lines[] = $nextIndent . $keyStr . ' => ' . $this->exportArray($value, $level + 1);
+            } else {
+                $valStr  = var_export($value, true);
+                $lines[] = $nextIndent . $keyStr . ' => ' . $valStr;
+            }
+        }
+
+        return "[\n" . implode(",\n", $lines) . "\n" . $indent . "]";
     }
 
     /**
@@ -364,37 +394,6 @@ class SettingService implements SettingServiceInterface
             ]);
             throw $e;
         }
-    }
-
-    // Генерит «плотно» без табуляции
-    // Короче метод запишет компакно но не удобно читать глазами а это всеже конфиг по этому зделан новый ниже метод
-    //private function exportArray(array $array): string
-    //{
-    //    return str_replace(
-    //        ['array (', ')'],
-    //        ['[', ']'],
-    //        var_export($array, true)
-    //    );
-    //}
-    private function exportArray(array $array, int $level = 0): string
-    {
-        $indent = str_repeat('    ', $level);
-        $nextIndent = str_repeat('    ', $level + 1);
-
-        $lines = [];
-        foreach ($array as $key => $value) {
-            $keyStr = is_int($key) ? $key : "'" . addslashes($key) . "'";
-
-            if (is_array($value)) {
-                $valStr = $this->exportArray($value, $level + 1);
-                $lines[] = $nextIndent . $keyStr . ' => ' . $valStr;
-            } else {
-                $valStr = var_export($value, true);
-                $lines[] = $nextIndent . $keyStr . ' => ' . $valStr;
-            }
-        }
-
-        return "[\n" . implode(",\n", $lines) . "\n" . $indent . "]";
     }
 
     /**

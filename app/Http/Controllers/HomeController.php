@@ -29,29 +29,6 @@ class HomeController extends Controller
     {
          // Тестирую 2 групу создать или добавить но новую запись
 
-        // Тест пройден все ок!
-        //$this->setting->addSetting('greeting', [
-        //    'morning' => 'Доброе утро',
-        //    'evening' => 'Добрый вечер',
-        //], 2, 'array', lang: 'ru');
-
-       //dd(1111);
-
-        // Добавляем настройку 2 Группа ок
-        //$this->setting->addSetting(
-        //    'site_name',
-        //    'Магазин',
-        //    2,
-        //    'string',
-        //    'Название сайта',
-        //    'production',
-        //    1,
-        //     'ru'
-        //);
-
-        //$this->setting->addSetting('site_name', 'Shop', 2, 'string', lang: 'en');
-
-
 
 
 
