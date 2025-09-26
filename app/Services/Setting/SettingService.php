@@ -11,6 +11,7 @@
  *
  * Основные методы:
  *      addSetting()        - Установить новые конфиг данные
+ *      get()               - Получить данные
  *
  **/
 namespace App\Services\Setting;
@@ -30,6 +31,7 @@ class SettingService implements SettingServiceInterface
     private const C_CONFIG      = 'config';   // Ключ для группы (.\storage\settings.php)
     private const C_LANG        = 'lang';     // Ключ для группы (.\lang\{locale}\settings\settings.php)
     private const C_DB          = 'db';       // Ключ для группы (БД)
+    private const C_CONFIG_DEF  = 'defaul';   // Ключ по умолчанию на случай збоя.
 
     private const C_TTL_META     = 86400;      // Время жизни ключа с даними
     private const C_TTL_DATA     = 86400;      // Время жизни Данных ключа
@@ -536,25 +538,18 @@ class SettingService implements SettingServiceInterface
     }
 
     // -- End -- конец методов для создания конфиг данных --------------------------------------------------------------
-    // -----------------------------------------------------------------------------------------------------------------
 
     /**
+     * Получить настройки
      *
      * $requestCache - Кеш - его задача хранить все даные под ключем (в рамках запроса)
-     *
-     * ----
-     *
+
      * Redis (ключ) - его задача хранить ключ -
      * и номер группы + дополнительные даные.
      * То есть грубо копирует таблицу - settings_registry
-     *
-     * ----
-     *
+
      * Redis (данные (config/lang/db)) - его задача хранить даные ключей - то есть все типы даных под своим ключем -
      * с учетом, что один ключ может иметь несколько значений.
-     *
-     *
-     *
     **/
     public function get(string $key, mixed $default = null, ?string $locale = null): mixed
     {
@@ -572,33 +567,14 @@ class SettingService implements SettingServiceInterface
         }
 
         // 3. Попытка получить данные ключа (это уже настройки) Redis (данные)
-        $value = $this->redisGetData($key, $meta, $locale);
+        $value = $this->redisGetData($key, $meta, $locale, $default);
 
+        // Если нет даныйх (все логи уже были установлены по этому просто выходим)
+        if ($value === null) {
+            return 'no data';
+        }
 
-
-        dd($value);
-
-
-
-
-
-
-
-        //if ($value === null) {
-        //    // 4. Чтение из группы
-        //    $value = $this->fetchFromGroup($meta['group'], $key, $locale);
-        //
-        //    if ($value === null) {
-        //        return $this->handleNotFound($key, $default);
-        //    }
-         //
-        //    $this->redisSetData($key, $value);
-        //}
-
-        // 5. Сохраняем в Request Cache
-        //self::$requestCache[$key] = $value;
-
-        //return $value;
+        return $value;
     }
 
     public function getOrFail(string $key, ?string $locale = null): mixed
@@ -692,50 +668,29 @@ class SettingService implements SettingServiceInterface
         }
     }
 
-    //private const CACHE_SERVICE = 'settings'; // Имя сервиса(SettingService)/группы (список имен в кеше --> PREFIXES)
-    //private const CACHE_TYPE    = 'meta';     // Тип данных (Ключ который гранит данные) (список типов в кеше --> TYPEPREFIXES)
-    //private const CACHE_DATA    = 'data';     // Тип данных (Для групп у которых ключ хранит данные группы) (список типов в кеше --> TYPEPREFIXES)
-    //private const C_CONFIG      = 'config';   // Ключ для группы (.\storage\settings.php)
-    //private const C_LANG        = 'lang';     // Ключ для группы (.\lang\{locale}\settings\settings.php)
-    //private const C_DB          = 'db';       // Ключ для группы (БД)
-    //private const C_TTL_META     = 86400;      // Время жизни ключа с даними
-    //private const C_TTL_DATA     = 86400;      // Время жизни Данных ключа
-    // Как устанавливаеться даные для ключа
-    //$success = $this->cache->put(
-    //    type:    self::CACHE_META,                    // Тип данных - meta
-    //    key:     $key,                                // Уникальный ключ, по этому ключу будем в будущем конретно получать настройки
-    //    value:   ['group' => $group,'type' => $type, 'is_active' => true, 'is_locked' => false], // Передаем данные для хранения
-    //    ttl:     self::C_TTL_META,                    // Время жизни если null то год
-    //    service: self::CACHE_SERVICE                  // Имя сервиса
-    // );
-    //self::$requestCache[$key] = $value;
-
     /**
      *  Получить даные (настройки)
      *
      *  1. Redis (данные) (in-memory, внутри PHP-запроса) - вернуть если есть
      *  2. Redis (данные):
-     *      3. Нет → идём в соответствующую группу (Config / Lang / DB / Config_def).
-     *          4 - Первый вариант пробуем по указаной группе найти
-     *          5 - Второй кариант пройтись по остальным группам
-     *              4. Нет → вернуть $default или ошибку.
-     *              5. Есть → сохранить в Redis (данные).
-     *      6. Есть → вернуть.
+     *      Нет → идём в соответствующую группу (Config / Lang / DB / Config_def).
+     *          3 - Первый вариант пробуем по указаной группе найти
+     *          4 - Второй кариант пройтись по остальным группам
+     *              5. Нет → вернуть $default или ошибку.
+     *              6. Есть → сохранить в Redis (данные).
+     *      7. Есть → вернуть.
      *
      *  $key - уникальный ключ
      *  $meta - Данные ключа - Пример: ['group' => $group,'type' => $type, 'is_active' => true, 'is_locked' => false]
      **/
-    protected function redisGetData(string $key, mixed $meta, $locale): mixed
+    protected function redisGetData(string $key, mixed $meta, string $locale, mixed $default): mixed
     {
         try {
 
             // Собрать ключ кеша
-            $k_group = match ($meta['group']) {
-                1 => self::C_CONFIG . ":{$key}",
-                2 => self::C_LANG   . ":{$key}",
-                3 => self::C_DB     . ":{$key}",
-                default => null,
-            };
+            $k_group = isset($meta['group'])
+                ? $this->makeGroupKey($meta['group'], $key)
+                : $this->makeGroupKey('default', $key);
 
             // 1. Request Cache (in-memory, внутри PHP-запроса) - Попытка повторо в рамках запроса получить данные
             if (isset(self::$requestCache[$k_group])) {
@@ -743,34 +698,71 @@ class SettingService implements SettingServiceInterface
             }
 
             // 2. Найти и считать даные ключа (Данные получаем уже в исходном состоянии как они были установлены изначально!)
-            //$data = $this->cache->get(
-            //    self::CACHE_DATA,        // Тип данных
-            //    $k_group,                     // Ключ записи
-            //    self::CACHE_SERVICE    // Сервис-источник (PREFIXES)
-            //);
+            $data = $this->cache->get(
+                self::CACHE_DATA,        // Тип данных
+                $k_group,                     // Ключ записи
+                self::CACHE_SERVICE    // Сервис-источник (PREFIXES)
+            );
 
-            // 6. Если есть даные вернуть
-            //if ($data !== null) {
-            //    // Сохраним в рамках запроса
-            //    self::$requestCache[$k_group] = $data;
-            //    return $data;
-            //}
+            // 7. Если есть даные вернуть
+            if ($data !== null) {
+                // Сохраним в рамках запроса
+                self::$requestCache[$k_group] = $data;
+                return $data;
+            }
 
-            // 3. Попытка сразу по группе из $meta
+            // 3. Первый вариант найти данные (настройки) по номеру группы
             $data = $this->loadFromGroup($meta['group'], $key, $locale);
-            //if ($data !== null) {
-            //    $this->cache->put(self::CACHE_DATA, $k_group, $data, 86400, self::CACHE_SERVICE);
-            //    self::$requestCache[$k_group] = $data;
-            //    return $data;
-            //}
+            if ($data !== null) {
+                // Востанавливаем основной кеш
+                $this->cache->put(self::CACHE_DATA, $k_group, $data, self::C_TTL_DATA, self::CACHE_SERVICE);
+                // Востанавливаем для повторного значения в рамках запроса
+                self::$requestCache[$k_group] = $data;
+                return $data;
+            }
 
+            // 4. Второй вариант - Полный обход всех групп (confog/lang/bd/default) + 1 группа хранит по умолчанию данные
+            // Порядок важен по этому в конфиге строго он установлен
+            foreach (config('settings.group_configs') as $group) {
 
+                if ($group === $meta['group']) {
+                    continue; // эту групу уже пробовали в "3." пропустим ее с экономим ресурсы
+                }
 
+                // Отправиться в каждую групу и попытаться найти данные
+                $data = $this->loadFromGroup($group, $key, $locale);
 
+                // Если даные найдены
+                if ($data !== null) {
+                    // Собрать ключ кеша для востановления кеша
+                    $k_group = $this->makeGroupKey($group, $key);
 
+                    // Востанавливаем основной кеш
+                    $this->cache->put(self::CACHE_DATA, $k_group, $data, self::C_TTL_DATA, self::CACHE_SERVICE);
 
+                    // Востаналиваем для повторного использования в рамках запроса
+                    self::$requestCache[$k_group] = $data;
 
-            dd($data);
+                    // Остановит цикл и вернет данные
+                    return $data;
+                }
+            }
+
+            // 5. Попытка получить дефолтные даные из самого метода
+            $data = $this->handleNotFound($key, $default);
+
+            // 6. Если даные получены востанавливаем - Здесь есть возможность того что номер группы не известен по этому установит по умолчанию!
+            // Если метод get(...,'') <- имеет пустое значения в таком формате вернет именно так
+            if ($data !== null) {
+                // Востановить основной кеш
+                $this->cache->put(self::CACHE_DATA, $k_group, $data, self::C_TTL_DATA, self::CACHE_SERVICE);
+                self::$requestCache[$k_group] = $data;
+                return $data;
+            }
+
+            // Ничего не нашли
+            $this->log("Key {$key} not found in any source");
+            return null;
 
         } catch (\Throwable $e) {
             // На случай ошибки Redis или DB
@@ -779,20 +771,27 @@ class SettingService implements SettingServiceInterface
         }
     }
 
-    /** Определяет и запускает поиск исходя из номера группы **/
-    private function loadFromGroup(int $group, string $key, $locale): mixed
+    /** Собрать правильые ключе для всех кешей которые хранять настройки **/
+    private function makeGroupKey(int $group, string $key): string
     {
-        // return $this->loadFromLang('site_name', $locale); ok
-        //return $this->loadFromConfig($key); ok
+        return match ($group) {
+            1 => self::C_CONFIG . ":{$key}",
+            2 => self::C_LANG   . ":{$key}",
+            3 => self::C_DB     . ":{$key}",
+            default => self::C_CONFIG_DEF . ":{$key}",
+        };
+    }
 
-        //!!  ---Остановка здесь!!!
-
-        //return match ($group) {
-        //    1 => $this->loadFromConfig($key),
-        //    2 => $this->loadFromLang($key, $locale),   // ok
-        //    3 => $this->loadFromDb($key),
-        //    default => null,
-        //};
+    /** Определяет и запускает поиск исходя из номера группы **/
+    private function loadFromGroup(int $group, string $key, string $locale): mixed
+    {
+        return match ($group) {
+            1 => $this->loadFromConfig($key),
+            2 => $this->loadFromLang($key, $locale),
+            3 => $this->loadFromDb($key),
+            4 => $this->loadFromDefault($key),
+            default => null,
+        };
     }
 
     /**
@@ -801,6 +800,20 @@ class SettingService implements SettingServiceInterface
     private function loadFromConfig(string $key): mixed
     {
         $file = storage_path('settings.php');
+        if (!file_exists($file)) {
+            return null;
+        }
+        $data = include $file;
+        return $data[$key] ?? null;
+    }
+
+    /**
+     * Загрузить из storage/settings.php - .\config\settings.php
+     * Файл хранит дефолтнфе настройки сайта
+     */
+    private function loadFromDefault(string $key): mixed
+    {
+        $file = config_path('settings.php');
         if (!file_exists($file)) {
             return null;
         }
@@ -848,14 +861,140 @@ class SettingService implements SettingServiceInterface
     // Вернуть даные по умолчанию переданые методом/null
     protected function handleNotFound(string $key, mixed $default): mixed { return $default; }
 
+    // -- END -- Получения даных (настроек) ----------------------------------------------------------------------------
 
-    //---------------------------------------
-    protected function redisSetData(string $key, mixed $value): void { /* ... */ }
-    protected function fetchFromGroup(int $group, string $key, ?string $locale): mixed { /* ... */ }
+    /** Обновить существующие настройи **/
+    public function updateSetting(
+        string $key,
+        mixed $value,
+        int $group,
+        string $type = 'string',
+        ?string $description = null,
+        string $environment = 'production',
+        ?int $updatedBy = null,
+        ?string $lang = null
+    ): bool {
 
-    protected function log(string $msg): void { /* ... */ }
+        // 1. Проверка допустимых групп
+        $allowedGroups = config('settings.group_configs'); // (1=config, 2=lang, 3=db,...)
+        if (!in_array($group, $allowedGroups, true)) {
+            Log::error("Указана некорректная группа при обновлении настроек", [
+                'key'         => $key,
+                'group'       => $group
+            ]);
+            throw new \InvalidArgumentException("Invalid group '{$group}'. Allowed values: 1=config, 2=lang, 3=db");
+        }
+
+        // 2. Запрещаем группу 4 Запрещено менять системные настройки по умолчанию - .\config\settings.php
+        if ($group === 4) {
+            Log::warning("Попытка изменить системную группу настроек (group=4), доступ запрещён", [
+                'key'   => $key,
+                'group' => $group
+            ]);
+            throw new \RuntimeException("Изменение группы '{$group}' запрещено");
+        }
+
+        // Собрать ключ исходч из номера группы и уникального ключа
+        $k_group = $this->makeGroupKey($group, $key);
+
+        // 3. Определить существования уникального ключа в Redis или DB
+        if(!$this->getOrRestore($k_group, $key, ))
+        {
+            return false; // Ключ не зарегистрирован в системе выходим
+        }
+
+        // Теперь по ключу поменять даные :
+        // 1 Основной кеш
+        // 2 Поменять в файлах или бд setting
+
+        // Остановка здесь!
 
 
+
+        dd($k_group);
+
+
+
+
+
+
+
+
+        //return $this->cache->updateOrFail(
+        //    type: self::CACHE_TYPE,     // например "config"
+        //    key: $key,
+        //    value: $value,
+        //    ttl: 86400,                 // или вынеси в константу
+        //    service: self::CACHE_SERVICE
+        //);
+    }
+
+    /**
+     * Определить по имени ключа есть лион в системе
+     *
+     *  $this->cache->exists(self::CACHE_DATA, $key_group, self::CACHE_SERVICE);
+     *  $this->cache->exists(self::CACHE_META, $key, self::CACHE_SERVICE)
+     */
+    public function getOrRestore(string $key_group, string $key) : bool {
+
+        // Если нет ключа в основном кеше
+        if (!$this->cache->exists(self::CACHE_META, $key, self::CACHE_SERVICE)){
+
+            // Проверка есть ли ключ в БД
+            if (DB::table('settings_registry')->where('key', $key)->exists()) {
+                return true;  // Ключ есть
+            }
+
+            Log::warning("Попытка найти ключ не удачна '{$key}'", [
+                'key'       => $key,            // Ключ
+                'key_cache' => $key_group,      // собранный реальный ключ кеша
+            ]);
+
+            return false;
+        }
+
+        // Ключ найден в основном кеше
+        return true;
+    }
+
+
+
+
+
+    //// 1 Проверить существует ли ключ 2 варианта  1 кеш 2 если в кеше нет БД но + восоздания
+
+// Редис ключ
+//$success = $this->cache->put(
+//type:    self::CACHE_META,                    // Тип данных - meta
+//key:     $key,                                // Уникальный ключ, по этому ключу будем в будущем конретно получать настройки
+//value:   ['group' => $group,'type' => $type, 'is_active' => true, 'is_locked' => false], // Передаем данные для хранения
+//ttl:     self::C_TTL_META,                    // Время жизни если null то год
+//service: self::CACHE_SERVICE                  // Имя сервиса
+//);
+//self::$requestCache[$key] = $value;
+
+// Редис данные
+//$k_group = self::C_LANG . ":{$key}:{$lang}";
+//$success = $this->cache->put(
+//    type:    self::CACHE_DATA,      // Тип данных (data --> data)
+//    key:     $k_group,              // Прмер ключа в готовом виде под ним можно смотреть данные +- (все ключи разные) - data:s_cfg:lang:site_name:ru
+//    value:   $value,
+//    ttl:     86400,                 // Время жизни если null то год
+//   service: self::CACHE_SERVICE    // Имя сервиса (settings --> s_cfg)
+//);
+
+
+
+
+    //-----------------------
+    public function deleteSettingCache(string $key): bool
+    {
+        //return $this->cache->deleteOrFail(
+        //    type: self::CACHE_TYPE,
+        //    key: $key,
+        //    service: self::CACHE_SERVICE
+        //);
+    }
 
 
 

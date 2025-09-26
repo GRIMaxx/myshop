@@ -6,7 +6,7 @@
  *
  * тип:сервис:ключ
  *
- * type:    'data',           - Тип данных (data, config, translations)
+ * type:    'data',           - Тип данных (data, config, translations, ...)
  * key:     'website_name',   - Уникальный ключ
  * service: 'settings'        - Сервис-владелец
  *
@@ -55,6 +55,20 @@
  * public function getCachedAttributes(): array
  * {
  * return $this->cache()->remember( <---
+ *
+ * !!ВАЖНО - Дополнительные пояснения
+ * Так как я использую чистый Redis без Laravel Cache все настройки с .env почти не работают и Redis по умолчанию
+ * будет устанавливать и потом искать в db=0
+ * Пример когда работаем через Redis::connection('cache') → Laravel берёт конфиг из config/database.php['redis']['cache'],
+ * а тот тянет значения из .env. (возможно и по этой причине оставим на пож случай)
+ * Но запомни основные настройки в файлах config/*
+ *
+ * по этой причине нужно ему показать куда устанавливать или от куда брать данные
+ * все просто connection('имя бд')  устанавливаем и все будет работать!
+ *
+ * Redis::connection('cache')->setex(...) для кэша
+ * Redis::connection('queue')->lpush(...) для очередей
+ * Redis::connection('session')->setex(...) для сессий
  */
 namespace App\Services\Cache;
 
@@ -139,7 +153,7 @@ class RedisCacheService implements CacheServiceInterface
     {
         try {
             $fullKey = $this->buildKey($type, $key, $service);
-            $value = Redis::get($fullKey);
+            $value = Redis::connection('cache')->get($fullKey);
 
             if ($value === null) {
                 return null;
@@ -210,7 +224,7 @@ class RedisCacheService implements CacheServiceInterface
                 $stored = 's:' . serialize($value);
             }
 
-            return (bool) Redis::setex($fullKey, $ttlSeconds, $stored);
+            return (bool) Redis::connection('cache')->setex($fullKey, $ttlSeconds, $stored);
         } catch (\Throwable $e) {
             Log::error("Redis put error: {$e->getMessage()}", compact('type', 'key', 'service'));
             return false;
@@ -231,7 +245,7 @@ class RedisCacheService implements CacheServiceInterface
     {
         try {
             $fullKey = $this->buildKey($type, $key, $service);
-            return (bool) Redis::del($fullKey);
+            return (bool) Redis::connection('cache')->del($fullKey);
         } catch (\Throwable $e) {
             Log::error("Redis forget error: {$e->getMessage()}", compact('type', 'key', 'service'));
             return false;
@@ -258,10 +272,10 @@ class RedisCacheService implements CacheServiceInterface
     {
         try {
             $pattern = $this->buildKey($type, $key ?? '*', $service);
-            $keys = Redis::keys($pattern);
+            $keys = Redis::connection('cache')->keys($pattern);
 
             if (!empty($keys)) {
-                Redis::del(...$keys);
+                Redis::connection('cache')->del(...$keys);
             }
         } catch (\Throwable $e) {
             Log::error("Redis invalidate error: {$e->getMessage()}", compact('type', 'key', 'service'));
@@ -333,4 +347,74 @@ class RedisCacheService implements CacheServiceInterface
 
         return "{$typePrefix}:{$servicePrefix}:{$key}";
     }
+
+    //----------------------- NEW -------------------------------------------------------------
+
+    // Строгое обновления
+    public function updateOrFail(string $type, string $key, mixed $value, int|Carbon|null $ttl = null, ?string $service = null): bool
+    {
+        try {
+            // Получить ключ
+            $fullKey = $this->buildKey($type, $key, $service);
+
+            if (!Redis::connection('cache')->exists($fullKey)) {
+                Log::warning("Redis update failed: key not found", compact('type', 'key', 'service'));
+                return false;
+            }
+
+            return $this->put($type, $key, $value, $ttl, $service);
+
+        } catch (\Throwable $e) {
+            Log::error("Redis update error: {$e->getMessage()}", compact('type', 'key', 'service'));
+            return false;
+        }
+    }
+
+    // Строгое удаления
+    public function deleteOrFail(string $type, string $key, ?string $service = null): bool
+    {
+        try {
+            $fullKey = $this->buildKey($type, $key, $service);
+
+            if (!Redis::connection('cache')->exists($fullKey)) {
+                Log::warning("Redis delete failed: key not found", compact('type', 'key', 'service'));
+                return false;
+            }
+
+            return (bool) Redis::connection('cache')->del($fullKey);
+
+        } catch (\Throwable $e) {
+            Log::error("Redis delete error: {$e->getMessage()}", compact('type', 'key', 'service'));
+            return false;
+        }
+    }
+
+    /** Метод проверяет есть ключ или нет **/
+    public function exists(string $type, string $key, ?string $service = null): bool
+    {
+        try {
+            $fullKey = $this->buildKey($type, $key, $service);
+            // возвращает количество найденных ключей (0 или 1), поэтому лучше сравнить > 0.
+            return Redis::connection('cache')->exists($fullKey) > 0;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

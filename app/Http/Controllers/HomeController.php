@@ -36,8 +36,21 @@ class HomeController extends Controller
         // g-3
         //$this->setting->addSetting('support_email', 'support@myshop.com', 3);
 
+        // полуить
+        //$this->setting->get('site_name','Тест');
 
-        $this->setting->get('site_name');
+        // обновить
+        $this->setting->updateSetting('site_name', 'MyShop', 1, 'string');
+
+
+            //string $type,
+            //string $key,
+            //mixed $value,
+            //int|Carbon|null $ttl = null,
+            //?string $service = null,
+            //?string $lang = null,
+
+
 
 
 

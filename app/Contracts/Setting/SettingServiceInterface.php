@@ -27,36 +27,18 @@ interface SettingServiceInterface
         ?string $lang = null
     ): void;
 
-    /**
-     * Сохранение в config/settings.php (группа 1).
-     * Обычно вызывается только из addSetting().
-     * public function saveToConfig(int $registryId, mixed $value): void;
-     */
+    public function updateSetting(
+        string $key,
+        mixed $value,
+        int $group,
+        string $type = 'string',
+        ?string $description = null,
+        string $environment = 'production',
+        ?int $updatedBy = null,
+        ?string $lang = null
+    ): bool;
 
-    /**
-     * Сохранение в lang/{locale}/settings/general.php (группа 2).
-     * Обычно вызывается только из addSetting().
-     * public function saveToLang(
-     *   int $registryId,
-     *   string $key,
-     *   mixed $value,
-     *   string $lang = 'en'
-     * ): void;
-     */
 
-    /**
-     * Сохранение в таблицу settings (группа 3).
-     * Обычно вызывается только из addSetting().
-     * public function saveToDb(int $registryId, mixed $value): void;
-     */
-
-    /**
-     * Нормализация значения для config.
-     * - объекты → массивы
-     * - ресурсы и closures запрещены
-     * public function normalizeConfigValueForExport(mixed $value): mixed;
-     */
-    // END - Конец мнтодов обработки создания новой записи
 
 
 

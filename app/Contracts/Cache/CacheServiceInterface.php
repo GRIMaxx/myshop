@@ -71,4 +71,9 @@ interface CacheServiceInterface
      * // Вернёт: "flt:s_geo:countries"
      */
     public function buildKey(string $type, string $key, ?string $service = null): string;
+
+    // -- new
+
+    public function updateOrFail(string $type, string $key, mixed $value, int|Carbon|null $ttl = null, ?string $service = null): bool;
+    public function deleteOrFail(string $type, string $key, ?string $service = null): bool;
 }
