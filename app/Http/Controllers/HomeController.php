@@ -27,25 +27,18 @@ class HomeController extends Controller
 	//  Возвращаем макет главной страницы сайта
     public function index(): View
     {
-         // Тестирую 2 групу создать или добавить, но новую запись
+        // g-1
+        //$this->setting->addSetting('site_name', 'MyShop', 1);
 
-        // гр -1
-        //$this->setting->addSetting('currencies', ['USD', 'EUR', 'UAH'], 1, 'array');
+        // g-2
+        //$this->setting->addSetting('autor', 'Gritmax', 2, 'string', lang: 'ru');
 
-        // гр - 2
-        //$this->setting->addSetting('greeting', [
-        //   'morning' => 'Доброе утро',
-        //   'evening' => 'Добрый вечер',
-        //], 2, 'array', lang: 'ru');
+        // g-3
+        //$this->setting->addSetting('support_email', 'support@myshop.com', 3);
 
-        // гр - 3
-        //$this->setting->addSetting('payment_methods', [
-       //    'paypal' => true,
-        //   'stripe' => false,
-        //], 3, 'json');
 
-        // тестирую 1 группу
-        //$this->setting->get('currencies');
+        $this->setting->get('site_name');
+
 
 
         return view('welcome');
