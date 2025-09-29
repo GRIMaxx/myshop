@@ -13,7 +13,15 @@
  *      addSetting()        - Установить новые конфиг данные
  *      get()               - Получить данные
  *      updateSetting()     - Обновить даные строго существующего ключа + если есть локаль
+ *      deleteSettingCache()- Удалить любую запись полностью из системы
+ * Примеры использования или тесты (тесты пройдены 100%)
  *
+ * $this->setting->addSetting('site_name2', 'MyShop-2', 1);
+ * $this->setting->addSetting('autoren', 'Роман-en', 2, 'string','en');
+ * $this->setting->addSetting('support_email-2', 'support@myshop.com', 3);
+ * dd($this->setting->get('autor','Тест','ru'));
+ * $this->setting->updateSetting('autor', 'GX-1234');
+ * dd($this->setting->deleteSettingCache('support_email-1',));
  **/
 namespace App\Services\Setting;
 
@@ -41,8 +49,7 @@ class SettingService implements SettingServiceInterface
      * Времменый кеш в рамках запроса.
      * Request Cache (in-memory, внутри PHP-запроса)
      **/
-    protected static array $requestCache = [];
-
+    private static array $requestCache = [];
     public function __construct(
         private CacheServiceInterface $cache
     ) {}
@@ -567,11 +574,7 @@ class SettingService implements SettingServiceInterface
         }
     }
 
-
-
     // -- End -- конец методов для создания конфиг данных --------------------------------------------------------------
-
-
 
     /**
      * Получить настройки
@@ -908,11 +911,7 @@ class SettingService implements SettingServiceInterface
         return $default;
     }
 
-
-
     // -- END -- Получения даных (настроек) ----------------------------------------------------------------------------
-
-
 
     /**
      * Обновить существующую настройку по её ключу.
@@ -1013,7 +1012,7 @@ class SettingService implements SettingServiceInterface
             );
 
         // 5. Отловить попытку - полностью предотвращает случайное обновление ключа другой локали (*:ru vs *:en).
-        if ($lang !== null && $lang !== $locale) {
+        if ($lang !== null && $lang !== $locale && $group === 2) {
             Log::error("Указанная локаль не совпадает с локалью в мета-данных и её изменять нельзя!", [
                 'key'   => $key,
                 'group' => $group,
@@ -1153,10 +1152,7 @@ class SettingService implements SettingServiceInterface
         return is_array($data) ? $data : null;
     }
 
-
     // -- END -- Обновления даных (настроек) ----------------------------------------------------------------------------
-
-
 
     /**
      * Удалить любую настройку (включая сам ключ и все связанные данные).
@@ -1184,173 +1180,238 @@ class SettingService implements SettingServiceInterface
         ?string $lang = null, // Локаль - удалить в конкретный ключ с конкретным переводом
     ): bool {
 
-        dd('Остановка здесь');
-
-
-
         // 1. Проверить, существует ли ключ в кеше
-        // - Вернет гарантированно масив если ключ найден
+        // - Вернет гарантированно масив при условии что если ключ найден!
         //[
         //    "group"     => 1/2/3      - номер одной из групп
         //    "type"      => "string"   - тип даных которые храняться
         //    "is_active" => true
         //    "is_locked" => false
+        //    "locale"    => "ru/en"
         //]
         $meta = $this->getOrRestoreRedis($key);
 
-        // 2. Если ключ в кеше не найден — ищем в БД
+        // 2. Если ключ в кеше не найден
         if ($meta === null) {
+
+            // 3. Проверить, существует ли ключ в БД с данными
             $meta = DB::table('settings_registry')
-                ->select('id', 'group', 'type', 'is_active', 'is_locked')
+                ->select('id', 'group', 'type', 'is_active', 'is_locked', 'locale')
                 ->where('key', $key)
                 ->first();                      // Вернёт объект или null
+
+            // 4. Если и в БД нет ключа и данных
             if (!$meta) {
-                Log::error("Попытка удаления несуществующего ключа", [
+                Log::error("Попытка обновления несуществующего ключа", [
                     'key'   => $key,
                 ]);
                 return false;
             }
         }
 
-        // 3. Определяем группу (1=config, 2=lang, 3=db)
+        // 5. Определяем группу (1=config, 2=lang, 3=db,...), с учетом от куда были полученны мета-данные из кеша или Бд
         $group = (int) (is_object($meta) ? $meta->group : ($meta['group'] ?? 0));
 
-        // 4. Проверка допустимых групп
-        $allowedGroups = config('settings.group_configs');
+        // 6. Получить локаль при любых вариантов (object | array | null), чтобы небыло пустых полей
+        // Если $meta объект — берём $meta->locale, если пусто — подставляем дефолт из конфига.
+        // Если $meta массив — аналогично $meta['locale'].
+        // Если $meta нет — сразу дефолт.
+        // Приведение к (string) гарантирует, что даже пустой null станет строкой.
+        $locale = (string) (
+        is_object($meta)
+            ? (!empty($meta->locale) ? $meta->locale : config('settings.lang_trs'))
+            : (is_array($meta)
+            ? (!empty($meta['locale']) ? $meta['locale'] : config('settings.lang_trs'))
+            : config('settings.lang_trs'))
+        );
+
+        // 7. Отловить попытку - полностью предотвращает случайное обновление ключа другой локали (*:ru vs *:en).
+        // Другими словами $lang === $locale - всегда должны совпадать
+        if ($group === 2 && $lang !== null && $lang !== $locale) {
+            Log::error("Указанная локаль не совпадает с локалью в мета-данных и её изменять нельзя!", [
+                'key'   => $key,
+                'group' => $group,
+                'lang'  => $lang,
+                'locale' => $locale,
+            ]);
+            throw new \InvalidArgumentException(
+                sprintf(
+                    "С указанной '%s' локалью не найден ключ, который есть с локалью '%s'.",
+                    $lang,
+                    $locale
+                )
+            );
+        }
+
+        $lang = $locale;   // Синхронизируем данные
+
+        // 8. Проверка допустимых групп
+        // - Практически такой вариант не возможен, но на всякий пожарный (от взлома кеша).
+        $allowedGroups = config('settings.group_configs', [1, 2, 3]);
         if (!in_array($group, $allowedGroups, true)) {
-            Log::error("Некорректная группа при удалении настройки", compact('key', 'group'));
+            Log::error("Указана некорректная группа при обновлении настроек", [
+                'key'   => $key,
+                'group' => $group
+            ]);
             throw new \InvalidArgumentException("Invalid group '{$group}'. Allowed values: 1=config, 2=lang, 3=db");
         }
 
-        // 5. Запрещаем системную группу (4)
+        // 9. Запрещаем системную группу (4) обновлять
+        // - Практически такой вариант не возможен, но на всякий пожарный (от взлома кеша).
         if ($group === 4) {
-            Log::warning("Попытка удалить системную настройку (group=4)", compact('key', 'group'));
-            throw new \RuntimeException("Удаление системной группы (4) запрещено");
+            Log::warning("Попытка изменить системную группу настроек (group=4), доступ запрещён", [
+                'key'   => $key,
+                'group' => 4
+            ]);
+            throw new \RuntimeException("Изменение системной группы (4) запрещено");
         }
 
-        // 6. Преобразуем meta в массив для удобства дальнейшей работы
+        // 10. Преобразуем meta в массив для удобства дальнейшей работы
         $meta = (array) $meta;
         $registryId = $meta['id'] ?? null;
 
         // Обновления
-        return DB::transaction(function () use ($key, $lang, $registryId, $group) {
+        return DB::transaction(function () use ($group, $key, $lang, $registryId) {
 
-            // 1. Удалить данные из группы  (storage/lang/bd)
-            //match ($group) {
-            //    1 => $this->deleteFromConfig($key),
-            //    2 => $this->deleteFromLang($key, $lang),
-            //    3 => $this->deleteFromDb($registryId, $key),
-            //    default => throw new \RuntimeException("Unknown group {$group}"),
-            //};
+            // 11. Удалить данные из группы
+            match ($group) {
+                1 => $this->deleteFromConfig($key),
+                2 => $this->deleteFromLang($key, $lang),
+                3 => $this->deleteFromDb($registryId, $key),
+                default => throw new \RuntimeException("Unknown group {$group}"),
+            };
 
-            /** 2. Удалить временный кеш  **/
-            //if (isset(self::$requestCache[$key])) {
-            //    unset(self::$requestCache[$key]);
-            //}
+            try {
+                // 12. Удаления из кеша ключ и метаданные
+                $this->cache->deleteOrFail(
+                    type: self::CACHE_META,
+                    key: $key,
+                    service: self::CACHE_SERVICE
+                );
 
-            /** 3. Удалить из Redis **/
-            $keyCache = $this->makeGroupKey($group, $key);     // Пример ключа: config:site_name
+                $key_data = $this->makeGroupKey($group, $key, $lang);
 
+                // 13. Удаления из основного кеша с данными
+                $this->cache->deleteOrFail(
+                    type: self::CACHE_DATA,
+                    key: $key_data,
+                    service: self::CACHE_SERVICE
+                );
+                unset(self::$requestCache[$key]);           // Удалить из кеша ключи с мета-данными
+                unset(self::$requestCache[$key_data]);      // Удалить из кеша ключи с настройками
+            } catch (\Throwable $e) {
+                Log::error("Ошибка при удалении кеша настройки", [
+                    'key' => $key,
+                    'group' => $group,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
+            // 14. Удалить сам ключ из settings_registry
+            DB::table('settings_registry')->where('key', $key)->delete();
 
+            Log::info("Настройка полностью удалена", [
+                'key' => $key,
+                'group' => $group,
+            ]);
 
-            dd($keyCache);
-
-
-            //if($lang === null){
-            //    $typeCache = $this->makeGroupType($group, $key);
-//$k_group = self::C_LANG . ":{$key}:{$lang}";
-            //}else{
-
-
-           // }
-
-            dd($keyCache);
-
-            //..$typeCache = $this->makeGroupType($group, $key);
-
-
-            //$k_group = self::C_LANG . ":{$key}:{$lang}";
-
-
-            //try {
-            //    // Удалить из кеша группы
-            //    $this->cache->deleteOrFail(
-            //        type: self::CACHE_DATA,
-            //        key: $keyCache,
-            //        service: self::CACHE_SERVICE
-            //    );
-            //    // Удалить из ключа кеша
-            //    $this->cache->deleteOrFail(
-            //        type: self::CACHE_META,
-            //        key: $key,
-            //        service: self::CACHE_SERVICE
-            //    );
-            //} catch (\Throwable $e) {
-            ///    Log::error("Ошибка при удалении кеша настройки", [
-            //        'key' => $key,
-            //        'group' => $group,
-            //        'error' => $e->getMessage(),
-            //    ]);
-           // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            // Получить ключ кеша
-            //$key_cache = $this->makeGroupKey($group, $key);
-
-            // Получить тип кеша
-            //$type_cache = $this->makeGroupType($group, $key);
-
-            //dd();
-
-            // Удалить нужно исходя из группы по ключу все даные включая сам ключ
-
-            // 1. - Удалить из группы
-            // $group = здесь группа одна из 1,2,3
-            // group=1 → storage/settings.php
-            // group=2 → lang/{locale}/settings/*.php
-            // group=3 → таблица settings_registry --> settings   (settings_registry.id == settings.registry_id)
-
-            // 2. удалить из временого кеша в рамках запроса
-            // self::$requestCache[$key] = $value;
-
-            // 3. Удалить из основного кеша
-            //$this->cache->deleteOrFail(
-            //    type: $type_cache,
-            //    key: $key_cache,                       // Пример ключа:  "data:s_cfg:lang:autor:ru"
-            //    service: self::CACHE_SERVICE           // Имя сервиса в данном случаее 'settings'
-            //);
-
+            return true;
         });
-
     }
 
     /** Удаление из config (storage/settings.php) */
     private function deleteFromConfig(string $key): void
     {
-        // Реализуй позже — например, переписать config/settings.php без этой записи
-        Log::debug("Удалена настройка из config", ['key' => $key]);
+        $path = storage_path('settings.php');
+
+        if (!file_exists($path)) {
+            Log::warning("Файл storage/settings.php не найден при удалении ключа", ['key' => $key]);
+            return;
+        }
+
+        try {
+            // 1. Подключаем файл как массив
+            $settings = include $path;
+
+            if (!is_array($settings)) {
+                Log::error("Некорректный формат storage/settings.php (ожидался массив)");
+                return;
+            }
+
+            // 2. Проверяем наличие ключа
+            if (!array_key_exists($key, $settings)) {
+                Log::notice("Ключ '{$key}' не найден в storage/settings.php");
+                return;
+            }
+
+            // 3. Удаляем ключ
+            unset($settings[$key]);
+
+            // 4. Формируем красиво оформленный PHP-код через exportArray()
+            $content = "<?php\n\nreturn " . $this->exportArray($settings) . ";\n";
+
+            // 5. Перезаписываем файл
+            file_put_contents($path, $content);
+
+            Log::info("Ключ '{$key}' успешно удалён из storage/settings.php");
+        } catch (\Throwable $e) {
+            Log::error("Ошибка при удалении ключа из storage/settings.php", [
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /** Удаление из lang/{locale}/settings */
     private function deleteFromLang(string $key, ?string $lang): void
     {
-        // Реализуй позже — можно просто удалить перевод из языкового файла
-        Log::debug("Удалена настройка из lang", ['key' => $key, 'lang' => $lang]);
+        $lang = $lang ?: config('settings.lang_trs', 'en');
+        $dir = lang_path("{$lang}/settings");
+
+        if (!is_dir($dir)) {
+            Log::warning("Директория языковых файлов не найдена", ['lang' => $lang, 'key' => $key]);
+            return;
+        }
+
+        $deleted = false;
+
+        try {
+            // 1. Перебираем все файлы внутри lang/{locale}/settings/
+            foreach (glob($dir . '/*.php') as $file) {
+                $data = include $file;
+
+                if (!is_array($data) || !array_key_exists($key, $data)) {
+                    continue;
+                }
+
+                // 2. Удаляем ключ
+                unset($data[$key]);
+
+                // 3. Формируем красиво оформленный PHP-код через exportArray()
+                $content = "<?php\n\nreturn " . $this->exportArray($data) . ";\n";
+
+                // 4. Перезаписываем файл
+                file_put_contents($file, $content);
+
+                Log::info("Ключ '{$key}' удалён из языкового файла", [
+                    'lang' => $lang,
+                    'file' => basename($file),
+                ]);
+
+                $deleted = true;
+            }
+
+            // 5. Если не найден ни в одном файле
+            if (!$deleted) {
+                Log::notice("Ключ '{$key}' не найден ни в одном языковом файле для локали '{$lang}'");
+            }
+        } catch (\Throwable $e) {
+            Log::error("Ошибка при удалении ключа из языковых файлов", [
+                'lang' => $lang,
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /** Удаление из базы (settings, settings_registry) */
@@ -1361,36 +1422,4 @@ class SettingService implements SettingServiceInterface
         }
         Log::debug("Удалена настройка из БД", ['key' => $key]);
     }
-
-    ///** Исходя из группы получить тип кеша **/
-    //private function makeGroupType(int $group, string $key): string
-    //{
-    //    return match ($group) {
-    //        1 => self::C_CONFIG,           // 'config' - Ключ типа для группы (.\storage\settings.php)
-    //        2 => self::C_LANG,             // 'lang'   - Ключ типа для группы (.\lang\{locale}\settings\settings.php)
-    //        3 => self::C_DB,               // 'db'     - Ключ типа для группы (БД)
-    //        default => null,               // так как это может быть для удаления 4 групу не ставим чтобы случайно не удалить!
-    //    };
-    //}
-
-    //public function getOrFail(string $key, ?string $locale = null): mixed
-    //{
-    //    return $this->get($key, '__FAIL__', $locale) === '__FAIL__'
-    //        ? throw new \RuntimeException("Setting {$key} not found")
-    //        : $this->get($key, null, $locale);
-    //}
-
-    ///**
-    // * Загрузить из системных данных ./config/settings.php
-    // * Файл хранит дефолтнфе настройки сайта
-    // */
-    //private function loadFromDefault(string $key): mixed
-    //{
-    //    $file = config_path('settings.php');
-    //    if (!file_exists($file)) {
-    //        return null;
-    //    }
-    //    $data = include $file;
-    //    return $data[$key] ?? null;
-    //}
 }

@@ -27,14 +27,16 @@ class HomeController extends Controller
 	//  Возвращаем макет главной страницы сайта
     public function index(): View
     {
+
+        // -- Установка конфигов ---------------------------------
         // g-1
-        //$this->setting->addSetting('site_name', 'MyShop', 1);
+        //$this->setting->addSetting('site_name2', 'MyShop-2', 1);
 
         // g-2 ru
-        //$this->setting->addSetting('autor', 'Роман', 2, 'string','ru');
+        //$this->setting->addSetting('autoren', 'Роман-en', 2, 'string','en');
 
         // g-3
-        //$this->setting->addSetting('support_email', 'support@myshop.com', 3);
+        //$this->setting->addSetting('support_email-2', 'support@myshop.com', 3);
 
         // полуить
         //dd($this->setting->get('autor','Тест','ru'));
@@ -43,17 +45,11 @@ class HomeController extends Controller
         //$this->setting->updateSetting('autor', 'GX-1234');
 
         // удалить
-        $this->setting->deleteSettingCache('site_name','ru');
+        //dd($this->setting->deleteSettingCache('support_email-1',));
 
 
 
 
-            //string $type,
-            //string $key,
-            //mixed $value,
-            //int|Carbon|null $ttl = null,
-            //?string $service = null,
-            //?string $lang = null,
 
 
 

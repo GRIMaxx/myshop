@@ -350,7 +350,7 @@ class RedisCacheService implements CacheServiceInterface
 
     //----------------------- NEW -------------------------------------------------------------
 
-    // Строгое обновления
+    // Строгое обновления (Пока не использую)
     public function updateOrFail(string $type, string $key, mixed $value, int|Carbon|null $ttl = null, ?string $service = null): bool
     {
         try {
