@@ -34,6 +34,9 @@ return new class extends Migration
 			// Тип данных (string, int, bool, json и т.д.)
 			$table->string('type', 50)->default('string');
 
+            // Локаль - на каком языке храняться данные (только для группы 2)
+            $table->char('locale', 5)->default('en')->index();
+
 			// Описание ключа (чисто документация/админка)
 			$table->text('description')->nullable();
 

@@ -21,21 +21,22 @@ interface SettingServiceInterface
         mixed $value,
         int $group,
         string $type = 'string',
+        ?string $lang = null,
         ?string $description = null,
         string $environment = 'production',
-        ?int $updatedBy = null,
-        ?string $lang = null
+        ?int $updatedBy = null
     ): void;
 
     public function updateSetting(
         string $key,
         mixed $value,
-        int $group,
-        string $type = 'string',
+        ?string $lang = null,
+        ?string $type = 'string',
+        ?bool $is_active = true,
+        ?bool $is_locked = false,
         ?string $description = null,
-        string $environment = 'production',
-        ?int $updatedBy = null,
-        ?string $lang = null
+        ?string $environment = 'production',
+        ?int $updatedBy = null
     ): bool;
 
 

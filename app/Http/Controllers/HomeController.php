@@ -30,17 +30,22 @@ class HomeController extends Controller
         // g-1
         //$this->setting->addSetting('site_name', 'MyShop', 1);
 
-        // g-2
-        //$this->setting->addSetting('autor', 'Gritmax', 2, 'string', lang: 'ru');
+        // g-2 ru
+        //$this->setting->addSetting('autor', 'Роман', 2, 'string','ru');
 
         // g-3
         //$this->setting->addSetting('support_email', 'support@myshop.com', 3);
 
         // полуить
-        //$this->setting->get('site_name','Тест');
+        //dd($this->setting->get('autor','Тест','ru'));
 
         // обновить
-        $this->setting->updateSetting('site_name', 'MyShop', 1, 'string');
+        //$this->setting->updateSetting('autor', 'GX-1234');
+
+        // удалить
+        $this->setting->deleteSettingCache('site_name','ru');
+
+
 
 
             //string $type,

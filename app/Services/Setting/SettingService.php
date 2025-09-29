@@ -12,6 +12,7 @@
  * Основные методы:
  *      addSetting()        - Установить новые конфиг данные
  *      get()               - Получить данные
+ *      updateSetting()     - Обновить даные строго существующего ключа + если есть локаль
  *
  **/
 namespace App\Services\Setting;
@@ -141,28 +142,31 @@ class SettingService implements SettingServiceInterface
      * @param ?int    $updatedBy   Кто добавил (id пользователя) Автор изменений: в реальном маркетплейсе важно знать, кто поменял настройку.
      * @param ?string $lang        Язык (только для группы 2, default = en)
     */
-     public function addSetting(string $key,mixed $value,int $group,string $type = 'string',?string $description = null,string $environment = 'production',?int $updatedBy = null,?string $lang= null): void
+     public function addSetting(string $key,mixed $value,int $group,string $type = 'string', $lang = null, ?string $description = null,string $environment = 'production',?int $updatedBy = null): void
      {
-        // Проверка допустимых групп
-        $allowedGroups = config('settings.group_configs'); // (1=config, 2=lang, 3=db,...)
-        if (!in_array($group, $allowedGroups, true)) {
+         // Если язык не определен установить по умолчанию
+         $lang = $lang ?? config('settings.lang_trs');
+
+         // Проверка допустимых групп
+         $allowedGroups = config('settings.group_configs'); // (1=config, 2=lang, 3=db,...)
+         if (!in_array($group, $allowedGroups, true)) {
             Log::error("Указана некорректная группа при добавлении настройки", [
-                'key'         => $key,
-                'group'       => $group
+                'key'       => $key,
+                'group'     => $group,
+                'locale'    => $lang
             ]);
             throw new \InvalidArgumentException("Invalid group '{$group}'. Allowed values: 1=config, 2=lang, 3=db");
-        }
+         }
 
-        // Для отката делаем все в DB::transaction
-        DB::transaction(function () use (
-            $key, $value, $group, $type, $description, $environment, $updatedBy, $lang
-        ) {
+         // Для отката делаем все в DB::transaction
+         DB::transaction(function () use ($key, $value, $group, $type, $description, $environment, $updatedBy, $lang) {
 
-            // Проверка на уникальность - если ключ существует выходим + логирование + ошибка
+            // Проверка на уникальность - если ключ существует, выходим + логирование + ошибка
             if (DB::table('settings_registry')->where('key', $key)->exists()) {
                 Log::warning("Попытка добавить дубликат ключа '{$key}'", [
-                    'key'         => $key,        // Ключ
-                    'group'       => $group,      // Группа
+                    'key'       => $key,        // Ключ
+                    'group'     => $group,      // Группа
+                    'locale'    => $lang        // Язык если есть
                 ]);
                 throw new \Exception("Setting with key '{$key}' already exists");
             }
@@ -172,6 +176,7 @@ class SettingService implements SettingServiceInterface
                 'key'            => $key,               // Уникальный ключ
                 'group'          => $group,             // (1=config, 2=lang, 3=db,...)
                 'type'           => $type,              // Тип данных (string, int, bool, json и т.д.)
+                'locale'         => $lang,              // Для группы 2 спец поле на каом языке настройка(и)
                 'description'    => $description,       // Описание ключа (чисто документация/админка)
                 'environment'    => $environment,       // Разделение по окружениям (dev/stage/prod)
                 'is_active'      => true,               // Флаги состояния: иногда удобно хранить явно
@@ -181,38 +186,62 @@ class SettingService implements SettingServiceInterface
                 'updated_at'     => now(),
             ]);
 
-            // Проверка что insertGetId вернул id
+            // Проверка что insertGetId вернул id - убилимся что записи созданы
             if (!$registryId) {
                 Log::error("Ошибка insertGetId — ID не вернулся", [
-                    'key'   => $key,
-                    'group' => $group,
+                    'key'       => $key,
+                    'group'     => $group,
+                    'locale'    => $lang        // Язык если есть
                 ]);
                 throw new \RuntimeException("Failed to insert setting '{$key}' into settings_registry");
             }
 
             /**
-             * Установка Кеша (ключ)
-             * group     - Номер группы, по номеру группы в будушем будем определять где искать в каком файле из четырех груп
-             * type      - Тип данных которые храняться под этим ключом
+             * Собрать данные для сохранения в кеше
+             * group - Номер группы, по номеру группы в будушем будем определять где искать в каком файле из четырех груп
+             * type - Тип данных которые храняться под этим ключом
              * is_active - Активна настройка да нет
-             * is_locked -
+             * is_locked - Флаг запрет на изменения или удаления настройки
+             * locale - Язык настройки (спец поле для группы 2)
+             */
+            $meta_data = [                                  // Передаем данные для хранения
+                'group'     => $group,
+                'type'      => $type,
+                'is_active' => true,
+                'is_locked' => false,
+                'locale'    => $lang
+            ];
+
+            /**
+             * Установка кеша метаданых под уникальным ключем
+             *
              * Пример ключа: meta:s_cfg:{$key} - (тестируем в Redis Insight)
              * Возвращает метод true/false
              **/
             $success = $this->cache->put(
-                type:    self::CACHE_META,                    // Тип данных - meta
-                key:     $key,                                // Уникальный ключ, по этому ключу будем в будущем конретно получать настройки
-                value:   ['group' => $group,'type' => $type, 'is_active' => true, 'is_locked' => false], // Передаем данные для хранения
-                ttl:     self::C_TTL_META,                    // Время жизни если null то год
-                service: self::CACHE_SERVICE                  // Имя сервиса
+                type:    self::CACHE_META,                  // Тип данных - meta
+                key:     $key,                              // Уникальный ключ
+                value:   $meta_data,                        // Собраные даные для сохранения
+                ttl:     self::C_TTL_META,                  // Время жизни если null то год
+                service: self::CACHE_SERVICE                // Имя сервиса исходя - setting
             );
 
-            self::$requestCache[$key] = $value;               // Сохранить во временный кеш (он здесь не работает это для теста!)
+            if (!$success) {
+                Log::warning("Кеш метаданных не создан", [
+                    'key'       => $key,
+                    'group'     => $group,
+                    'locale'    => $lang
+                ]);
+            }
+
+            // Сохранить мета во временный кеш в рамках запроса (здесь он не работает это пример и тест)
+            self::$requestCache[$key] = $meta_data;
 
             // Сохраняем значение по группе
+            //
             match ($group) {
                 1 => $this->saveToConfig($key, $value),
-                2 => $this->saveToLang($registryId, $key, $value, $lang),
+                2 => $this->saveToLang($key, $value, $lang),
                 3 => $this->saveToDb($registryId, $value, $key),
                 default => throw new \Exception("Unknown group {$group}"),
             };
@@ -225,11 +254,7 @@ class SettingService implements SettingServiceInterface
         $registryId - id ключа в Таблице settings_registry
         $value      - Значения ключа
      */
-    protected function saveToConfig(
-        string $key,                   // Уникальный ключ он дублируеться в таблице settings_registr.key
-        mixed $value
-    ): void {
-
+    protected function saveToConfig(string $key, mixed $value): void {
         // Получить путь
         $path = storage_path('settings.php');
         $dir  = dirname($path);
@@ -293,21 +318,26 @@ class SettingService implements SettingServiceInterface
         @chmod($path, 0644);
 
         // Собрать ключ кеш
+        // готовый пример (смотр. в Redis Insight) : *:data:s_cfg:config:site_name
         $k_group = self::C_CONFIG . ":{$key}";
 
         /**
-         * Установка Кеша (данные конфиг файл)
+         * Установка данных настроек для охранения в основном кеше.
          * Возвращает метод true/false
          **/
         $success = $this->cache->put(
             type:    self::CACHE_DATA,      // Тип данных (data --> data)
-            key:     $k_group,              // Прмер ключа в готовом виде под ним можно смотреть данные +- (все ключи разные) - data:s_cfg:config:site_name
-            value:   $value,
-            ttl:     86400,                 // Время жизни если null то год
+            key:     $k_group,              // Уникальный ключ
+            value:   $value,                // Даные для сохранения
+            ttl:     self::C_TTL_DATA,      // Время жизни если null то год
             service: self::CACHE_SERVICE    // Имя сервиса (settings --> s_cfg)
         );
 
-        // Сохранить даные во временный кеш в рамках запроса (он здесь не работает - только для теста!ы)
+        if (!$success) {
+            Log::warning("Кеш 1 группы не создан", ['key'=> $key]);
+        }
+
+        // Сохранить даные во временный кеш в рамках запроса (он здесь не работает - только для теста)
         self::$requestCache[$k_group] = $value;
 
         Log::info("Setting saved to config", ['key' => $key, 'path' => $path]);
@@ -340,7 +370,10 @@ class SettingService implements SettingServiceInterface
         return $value;
     }
 
-    // Короче метод запишет компакно но не удобно читать глазами а это всеже конфиг по этому зделан новый ниже метод
+    /**
+     * Короче метод запишет компакно но не удобно читать глазами а это всеже
+     * конфиг по этому зделан новый ниже метод *
+     */
     private function exportArray(array $array, int $level = 0): string
     {
         $indent     = str_repeat('    ', $level);
@@ -361,27 +394,17 @@ class SettingService implements SettingServiceInterface
     }
 
     /**
-        Сохранить перевод в resources/lang/{locale}/settings/general.php
-        Пример что должно получиться:
-        return [
-          'name_site' => 'Морковь',
-        ];
-    */
-    protected function saveToLang(
-        int $registryId,               // ID под которым в таблице settings_registry краниться ключ от конфигурации
-        string $key,                   // Уникальный ключ он дублируеться в таблице settings_registr.key
-        mixed $value,                  // Значение (объекты -> массив) !запрещаем ресурсы/closures
-        string $lang = null,           // Язык перевода
-    ): void {
-
+     * Сохранить перевод в resources/lang/{locale}/settings/general.php
+     */
+    protected function saveToLang(string $key, mixed $value, string $lang = null): void {
         try {
-
-            // Если язык не передан установить по умолчанию
+            // Если язык не определен установить по умолчанию
             $lang = $lang ?? config('settings.lang_trs');
 
             // Список поддерживаемых локалей
             $locales = config('settings.supported_locales');
 
+            // Проверим еть в списке локаль если нет ошика (контроль записи)
             if (!in_array($lang, $locales, true)) {
                 Log::error("Unsupported locale '{$lang}' for setting '{$key}'");
                 throw new \Exception("Locale '{$lang}' is not supported");
@@ -442,26 +465,30 @@ class SettingService implements SettingServiceInterface
             //]);
 
             // Собрать ключ кеш
+            // Если язык не указан ключ будет - *:en
             $k_group = self::C_LANG . ":{$key}:{$lang}";
 
             /**
-             * Установка Кеша (данные конфиг файл)
+             * Установка данных в виде настройки в кеш.
              * Возвращает метод true/false
              **/
             $success = $this->cache->put(
                 type:    self::CACHE_DATA,      // Тип данных (data --> data)
                 key:     $k_group,              // Прмер ключа в готовом виде под ним можно смотреть данные +- (все ключи разные) - data:s_cfg:lang:site_name:ru
-                value:   $value,
-                ttl:     86400,                 // Время жизни если null то год
+                value:   $value,                // Данные для сохранения
+                ttl:     self::C_TTL_DATA,      // Время жизни если null то год
                 service: self::CACHE_SERVICE    // Имя сервиса (settings --> s_cfg)
             );
+
+            if (!$success) {
+                Log::warning("Кеш 1 группы не создан", ['key'=> $key, 'lang' => $lang]);
+            }
 
             // Сохранить даные во временный кеш в рамках запроса (он здесь не работает - только для теста!ы)
             self::$requestCache[$k_group] = $value;
 
         } catch (\Throwable $e) {
             Log::error("Failed to save setting '{$key}' to lang", [
-                'registry_id' => $registryId,
                 'lang' => $lang,
                 'error' => $e->getMessage(),
             ]);
@@ -506,26 +533,29 @@ class SettingService implements SettingServiceInterface
                 $k_group = self::C_DB . ":{$key}";
 
                 /**
-                 * Установка Кеша (данные конфиг файл)
+                 * Установка данных в кеш 3 группы
                  * Возвращает метод true/false
                  **/
                 $success = $this->cache->put(
                     type:    self::CACHE_DATA,      // Тип данных (data --> data)
                     key:     $k_group,              // Прмер ключа в готовом виде под ним можно смотреть данные +- (все ключи разные) - data:s_cfg:bd:site_name
                     value:   $value,
-                    ttl:     86400,                 // Время жизни если null то год
+                    ttl:     self::C_TTL_DATA,      // Время жизни если null то год
                     service: self::CACHE_SERVICE    // Имя сервиса (settings --> s_cfg)
                 );
+
+                if (!$success) {
+                    Log::warning("Кеш 3 группы не создан", ['key'=> $key]);
+                }
 
                 // Сохранить даные во временный кеш в рамках запроса (он здесь не работает - только для теста!ы)
                 self::$requestCache[$k_group] = $value;
 
-                // Для тестов логируем успешное сохранения
-                //Log::info("saveToDb: setting saved", [
-                //    'registry_id' => $registryId,
-                //    'setting_id'  => $id,
-                //     'value'       => $value,
-                //]);
+                // Логируем успешное сохранения
+                Log::info("saveToDb: setting saved", [
+                    'registry_id' => $registryId,
+                    'setting_id'  => $id
+                ]);
             });
         } catch (\Throwable $e) {
             Log::error("saveToDb: exception", [
@@ -537,7 +567,11 @@ class SettingService implements SettingServiceInterface
         }
     }
 
+
+
     // -- End -- конец методов для создания конфиг данных --------------------------------------------------------------
+
+
 
     /**
      * Получить настройки
@@ -553,189 +587,219 @@ class SettingService implements SettingServiceInterface
     **/
     public function get(string $key, mixed $default = null, ?string $locale = null): mixed
     {
-        // Добавить проверку ключа !
-
-        // Если язык не передан установить по умолчанию
+        // 1. Если язык не передан установить по умолчанию на тот случай если не найдет на нужном языке но есть по умолчанию
         $locale = $locale ?? config('settings.lang_trs');
 
-        // 1. Redis (ключ) - Попытка получить даные ключа
-        $meta = $this->redisGetKeyMeta($key);
+        // 2. Redis (ключ) - Попытка получить мета-даные ключа
+        // Если нет в кеше, бкдет попытка получить из БД - settings_registry
+        // Пример: ['group', 'type', 'is_active', 'is_locked', 'locale']
+        $meta = $this->redisGetKeyMeta($key, $locale);
 
-        // 2. Если данных ключа нет или ключ не найден вернуть даные по умолчанию которые передал метод или null
+        // 3. Мета-данные не получены, вернуть даные по умолчанию переданые в качестве параметров методу
         if (!$meta) {
-            return $this->handleNotFound($key, $default);
+            return $this->handleNotFound($default);
         }
 
-        // 3. Попытка получить данные ключа (это уже настройки) Redis (данные)
+        // 4.
         $value = $this->redisGetData($key, $meta, $locale, $default);
 
-        // Если нет даныйх (все логи уже были установлены по этому просто выходим)
+        // Если нет данных вернем по умолчанию или null
         if ($value === null) {
-            return 'no data';
+            return handleNotFound($default);
         }
 
         return $value;
-    }
-
-    public function getOrFail(string $key, ?string $locale = null): mixed
-    {
-        return $this->get($key, '__FAIL__', $locale) === '__FAIL__'
-            ? throw new \RuntimeException("Setting {$key} not found")
-            : $this->get($key, null, $locale);
     }
 
     /**
      * Получить метаданные ключа из Redis или settings_registry.
      *
      * Логика:
-     *  - 1. Пробуем достать из Redis (in-memory)-только-работает в одном запросе.
-     *  - 2. Пробуем достать из Redis (key)-Основной.
-     *  - 3. Если нет → ищем в settings_registry-(резерв и последний вариант)
-     *      - 4. Нет в settings_registry → лог + вернуть null.
-     *      - 5. Есть, но is_active=0 или is_locked=1 → лог + вернуть null.
-     *      - 6. Нашли валидный → записать в Redis и вернуть.
-     *  - 7. Если есть в Redis → проверить is_active / is_locked.
-     *      - 8. Если не ок → лог + вернуть null.
-     *      - 9. Если ок → вернуть.
+     *  1. Пробуем достать из Request Cache (in-memory, внутри одного запроса).
+     *  2. Пробуем достать из Redis (основной кеш).
+     *  3. Если нет — ищем в settings_registry (резерв и финальный вариант).
+     *      4. Нет в settings_registry → лог + вернуть null.
+     *      5. Есть, но is_active=0 или is_locked=1 → лог + вернуть null.
+     *      6. Нашли валидный → записать в Redis и в Request Cache, вернуть.
+     *  7. Если нашли в Redis — проверяем is_active / is_locked.
+     *      8. Если не ок → лог + вернуть null.
+     *      9. Если ок → вернуть.
+     *
+     * @param string $key         Уникальный ключ настройки.
+     * @param string|null $locale Язык (используется только для lang-группы).
+     * @return array|null         Ассоциативный массив с метаданными или null, если не найдено/заблокировано.
      */
-    protected function redisGetKeyMeta(string $key): ?array
+    protected function redisGetKeyMeta(string $key, ?string $locale = null): ?array
     {
         try {
 
-            // 1. Request Cache (in-memory, внутри PHP-запроса) - (Если найден ключ и данные сразу вернем)
+            // 1. Проверяем Request Cache (in-memory, в рамках PHP-запроса)
             if (isset(self::$requestCache[$key])) {
                 return self::$requestCache[$key];
             }
 
-            // 2. Найти и считать даные ключа (Данные получаем уже в исходном состоянии как они были установлены изначально!)
+            // 2. Пробуем получить из Redis
             $meta = $this->cache->get(
-                self::CACHE_META,        // Тип данных
-                $key,                        // Ключ записи
-                self::CACHE_SERVICE    // Сервис-источник (PREFIXES)
+                self::CACHE_META,           // Тип данных
+                $key,                           // Ключ
+                self::CACHE_SERVICE       // Сервис (prefix)
             );
 
-            // 7. Если данные получены
-            if ($meta) {
-
-                // Проверка активности
+            // 3. Проверяем найденные мета-данные
+            if (is_array($meta)) {
                 if (($meta['is_active'] ?? 0) == 0 || ($meta['is_locked'] ?? 0) == 1) {
-                    // 8.
-                    $this->log("Key {$key} is inactive or locked (from Redis)");
+                    Log::warning("Key '{$key}' is inactive or locked (from Redis)", [
+                        'key' => $key,
+                    ]);
                     return null;
                 }
 
-                // 9. Если проверка пройдена вернуть даные
+                // Сохраняем в Request Cache - временный кеш
+                self::$requestCache[$key] = $meta;
+
                 return $meta;
             }
 
-            // 3. Нет в Redis → достать из settings_registry
+            // 4. Нет в Redis → достаём из БД
             $meta = DB::table('settings_registry')
-                ->select(['group', 'type', 'is_active', 'is_locked'])
+                ->select(['group', 'type', 'is_active', 'is_locked', 'locale'])
                 ->where('key', $key)
                 ->first();
 
-            // 4. Если данных нет
+            // 5. Если ключ не найден в БД
             if (!$meta) {
-                $this->log("Key {$key} not found in settings_registry");
+                Log::error("Key '{$key}' not found in settings_registry", ['key' => $key]);
                 return null;
             }
 
-            // Собрать в массив
+            // 6. Преобразуем в массив
             $meta = (array) $meta;
 
-            // 5. Проверка активности
+            // 7. Проверяем активность и блокировку
             if (($meta['is_active'] ?? 0) == 0 || ($meta['is_locked'] ?? 0) == 1) {
-                $this->log("Key {$key} is inactive or locked (from Redis)");
+                Log::warning("Key '{$key}' is inactive or locked (from DB)", [
+                    'key' => $key,
+                ]);
                 return null;
             }
 
-            // 6.
-            $success = $this->cache->put(
-                type:    self::CACHE_META,                    // Тип
-                key:     $key,                                // Уникальный ключ
-                value:   ['group' => $meta['group'],'type' => $meta['type'],'is_active' => $meta['is_active'],'is_locked' => $meta['is_locked']], // Передаем данные для хранения
-                ttl:     self::C_TTL_META,                    // Время жизни
-                service: self::CACHE_SERVICE                  // Имя сервиса
+            // 8. Собираем финальные данные для кеша
+            $metaData = [
+                'group'     => (int) $meta['group'],
+                'type'      => (string) $meta['type'],
+                'is_active' => (bool) $meta['is_active'],
+                'is_locked' => (bool) $meta['is_locked'],
+                'locale'    => $locale ?? ($meta['locale'] ?? null),
+            ];
+
+            // 9. Сохраняем в Redis (META cache)
+            $this->cache->put(
+                type:    self::CACHE_META,
+                key:     $key,
+                value:   $metaData,
+                ttl:     self::C_TTL_META,
+                service: self::CACHE_SERVICE
             );
-            self::$requestCache[$key] = $meta;                // Установить для повторного использования во временном кеше в рамках запроса
+
+            // 10. Сохраняем в Request Cache
+            self::$requestCache[$key] = $metaData;
 
             // Возвращаем данные
-            return $meta;
+            return $metaData;
+
         } catch (\Throwable $e) {
-            // 3. На случай ошибки Redis или DB
-            $this->log("Error while getting meta for key {$key}: " . $e->getMessage());
+            Log::error("Error while getting meta for key '{$key}'", [
+                'key'     => $key,
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
             return null;
         }
     }
 
     /**
-     *  Получить даные (настройки)
+     * Получить данные настройки по ключу
      *
-     *  1. Redis (данные) (in-memory, внутри PHP-запроса) - вернуть если есть
-     *  2. Redis (данные):
-     *      Нет → идём в соответствующую группу (Config / Lang / DB / Config_def).
-     *          3 - Первый вариант пробуем по указаной группе найти
-     *          4 - Второй кариант пройтись по остальным группам
-     *              5. Нет → вернуть $default или ошибку.
-     *              6. Есть → сохранить в Redis (данные).
-     *      7. Есть → вернуть.
+     * Алгоритм работы:
+     *  1. Определяет группу данных (config/lang/db/system)
+     *  2. Формирует уникальный ключ кеша
+     *  3. Проверяет локальный кеш запроса (in-memory, self::$requestCache) - как для ключей и для данный
+     *  4. Пробует получить данные из Redis (основной кеш) + как ключи так и данные
+     *  5. Если не найдено — загружает данные из источника (storage/lang/db/config)
+     *  6. При нахождении восстанавливает кеш (Redis + in-memory)
+     *  7. Если не найдено нигде — выполняет fallback и возвращает default
      *
-     *  $key - уникальный ключ
-     *  $meta - Данные ключа - Пример: ['group' => $group,'type' => $type, 'is_active' => true, 'is_locked' => false]
-     **/
-    protected function redisGetData(string $key, mixed $meta, string $locale, mixed $default): mixed
+     * @param string      $key        Ключ настройки
+     * @param mixed       $meta       Метаданные настройки (array|object)
+     * @param string|null $locale     Локаль, если применимо (для lang-группы)
+     * @param mixed       $default    Значение по умолчанию, если данных нет
+     *
+     * @return mixed Возвращает значение настройки или значение по умолчанию
+     */
+    protected function redisGetData(string $key, mixed $meta, string $locale = null, mixed $default): mixed
     {
         try {
 
-            // Собрать ключ кеша
-            $k_group = isset($meta['group'])
-                ? $this->makeGroupKey($meta['group'], $key)
-                : $this->makeGroupKey('default', $key);
+            // 1. Определяем группу (1=config, 2=lang, 3=db, 4=system)
+            $group = (int) (
+            is_array($meta)
+                ? ($meta['group'] ?? 4)
+                : (is_object($meta) ? ($meta->group ?? 4) : 4)
+            );
 
-            // 1. Request Cache (in-memory, внутри PHP-запроса) - Попытка повторо в рамках запроса получить данные
+            // 2. Собрать ключ кеша
+            $k_group = $this->makeGroupKey($group, $key, $locale);
+
+            // 3. Проверяем локальный кеш (in-memory) внутри PHP-запросаах запроса
             if (isset(self::$requestCache[$k_group])) {
                 return self::$requestCache[$k_group];
             }
 
-            // 2. Найти и считать даные ключа (Данные получаем уже в исходном состоянии как они были установлены изначально!)
+            // 4. Найти и считать даные ключа (Данные получаем уже в исходном состоянии как они были установлены изначально!)
             $data = $this->cache->get(
-                self::CACHE_DATA,        // Тип данных
-                $k_group,                     // Ключ записи
-                self::CACHE_SERVICE    // Сервис-источник (PREFIXES)
+                self::CACHE_DATA,                       // Тип данных
+                $k_group,                                   // Ключ записи
+                self::CACHE_SERVICE                   // Сервис-источник (PREFIXES)
             );
 
-            // 7. Если есть даные вернуть
+            // 5 Если есть даные вернуть
             if ($data !== null) {
-                // Сохраним в рамках запроса
-                self::$requestCache[$k_group] = $data;
+                self::$requestCache[$k_group] = $data;      // Сохраним в рамках запроса
                 return $data;
             }
 
-            // 3. Первый вариант найти данные (настройки) по номеру группы
-            $data = $this->loadFromGroup($meta['group'], $key, $locale);
+            // 6. Первый вариант найти данные (настройки) по номеру группы
+            // Загрузить из:
+            //  1 группа storage/settings.php
+            //  2 группа lang/{locale}/settings/general.php
+            //  3 группа (settings + settings_registry)
+            //  4 группа ./config/settings.php
+            // Если ничего не найдет вернет по умолчанию - если есть
+            $data = $this->loadFromGroup($group, $key, $locale, $default);
+
+            // Если данные найдены востановим и вернем их
             if ($data !== null) {
                 // Востанавливаем основной кеш
                 $this->cache->put(self::CACHE_DATA, $k_group, $data, self::C_TTL_DATA, self::CACHE_SERVICE);
                 // Востанавливаем для повторного значения в рамках запроса
                 self::$requestCache[$k_group] = $data;
+                // Вернуть
                 return $data;
             }
 
-            // 4. Второй вариант - Полный обход всех групп (confog/lang/bd/default) + 1 группа хранит по умолчанию данные
+            // 7. Второй вариант - Полный обход всех групп (confog/lang/bd/default) + 1 группа системная хранит по умолчанию данные
             // Порядок важен по этому в конфиге строго он установлен
-            foreach (config('settings.group_configs') as $group) {
+            foreach (config('settings.group_configs') as $gp) {
 
-                if ($group === $meta['group']) {
+                if ($gp === $group) {
                     continue; // эту групу уже пробовали в "3." пропустим ее с экономим ресурсы
                 }
 
                 // Отправиться в каждую групу и попытаться найти данные
-                $data = $this->loadFromGroup($group, $key, $locale);
+                $data = $this->loadFromGroup($gp, $key, $locale, $default);
 
                 // Если даные найдены
                 if ($data !== null) {
-                    // Собрать ключ кеша для востановления кеша
-                    $k_group = $this->makeGroupKey($group, $key);
 
                     // Востанавливаем основной кеш
                     $this->cache->put(self::CACHE_DATA, $k_group, $data, self::C_TTL_DATA, self::CACHE_SERVICE);
@@ -748,49 +812,44 @@ class SettingService implements SettingServiceInterface
                 }
             }
 
-            // 5. Попытка получить дефолтные даные из самого метода
-            $data = $this->handleNotFound($key, $default);
+            // 8. Логируем отсутствие ключа
+            Log::error("Key {$key} not found in any source", [
+                'key'   => $key,
+            ]);
 
-            // 6. Если даные получены востанавливаем - Здесь есть возможность того что номер группы не известен по этому установит по умолчанию!
-            // Если метод get(...,'') <- имеет пустое значения в таком формате вернет именно так
-            if ($data !== null) {
-                // Востановить основной кеш
-                $this->cache->put(self::CACHE_DATA, $k_group, $data, self::C_TTL_DATA, self::CACHE_SERVICE);
-                self::$requestCache[$k_group] = $data;
-                return $data;
-            }
-
-            // Ничего не нашли
-            $this->log("Key {$key} not found in any source");
-            return null;
-
+            // 9. Возврат значения по умолчанию
+            return $this->handleNotFound($default);
         } catch (\Throwable $e) {
             // На случай ошибки Redis или DB
-            $this->log("Error retrieving key settings data {$key}: " . $e->getMessage());
-            return null;
+            Log::error("Error retrieving key settings data {$key}: ", [
+                'message'   => $e->getMessage(),
+            ]);
+            return $this->handleNotFound($default);
         }
     }
 
-    /** Собрать правильые ключе для всех кешей которые хранять настройки **/
-    private function makeGroupKey(int $group, string $key): string
+    /**
+     * Собрать правильые ключи для всех кешей которые хранять настройки *
+     */
+    private function makeGroupKey(int $group, string $key, ?string $locale = null): string
     {
         return match ($group) {
             1 => self::C_CONFIG . ":{$key}",
-            2 => self::C_LANG   . ":{$key}",
+            2 => self::C_LANG   . ":{$key}" . ($locale ? ":{$locale}" : ''),
             3 => self::C_DB     . ":{$key}",
             default => self::C_CONFIG_DEF . ":{$key}",
         };
     }
 
     /** Определяет и запускает поиск исходя из номера группы **/
-    private function loadFromGroup(int $group, string $key, string $locale): mixed
+    private function loadFromGroup(int $group, string $key, string $locale, mixed $default): mixed
     {
         return match ($group) {
             1 => $this->loadFromConfig($key),
             2 => $this->loadFromLang($key, $locale),
             3 => $this->loadFromDb($key),
-            4 => $this->loadFromDefault($key),
-            default => null,
+            4 => $this->loadFromConfigDefault($key),
+            default => $this->handleNotFound($default),
         };
     }
 
@@ -800,20 +859,6 @@ class SettingService implements SettingServiceInterface
     private function loadFromConfig(string $key): mixed
     {
         $file = storage_path('settings.php');
-        if (!file_exists($file)) {
-            return null;
-        }
-        $data = include $file;
-        return $data[$key] ?? null;
-    }
-
-    /**
-     * Загрузить из storage/settings.php - .\config\settings.php
-     * Файл хранит дефолтнфе настройки сайта
-     */
-    private function loadFromDefault(string $key): mixed
-    {
-        $file = config_path('settings.php');
         if (!file_exists($file)) {
             return null;
         }
@@ -858,163 +903,494 @@ class SettingService implements SettingServiceInterface
         return config("settings.{$key}") ?? null;
     }
 
-    // Вернуть даные по умолчанию переданые методом/null
-    protected function handleNotFound(string $key, mixed $default): mixed { return $default; }
+    /** Вернуть даные по умолчанию переданые методом/null **/
+    protected function handleNotFound(mixed $default = null): mixed {
+        return $default;
+    }
+
+
 
     // -- END -- Получения даных (настроек) ----------------------------------------------------------------------------
 
-    /** Обновить существующие настройи **/
+
+
+    /**
+     * Обновить существующую настройку по её ключу.
+     * Метод предназначен для - Супер-админа / системных процессов
+     *
+     * Для обычных админов можно собрать отдельный метод с :
+     * if ($meta['is_locked'] === true) {
+     *  throw new \RuntimeException("Эта настройка защищена и не может быть изменена.");
+     * }
+     *
+     * Метод безопасно обновляет данные настройки (значение, тип, описание, флаги активности и блокировки,...),
+     * автоматически определяя её группу (config, lang или db) из кеша или базы данных.
+     *
+     * Метод не будет обновлять даные если ключ не найден или ключ есть но другая локаль!
+     * Это полностью предотвращает случайное обновление ключа другой локали (*:ru vs *:en).
+     * Основные принципы работы:
+     *  - Группа настройки определяется автоматически (её нельзя изменить вручную).
+     *  - Сначала ищет метаданные ключа в Redis; если нет — загружает из БД.
+     *  - Если ключ отсутствует в обоих источниках, обновление не выполняется.
+     *  - Системная группа (4) защищена от изменений.
+     *  - Все изменения выполняются в транзакции.
+     *  - После успешного обновления данные пересохраняются в соответствующее хранилище:
+     *      • group=1 → storage/settings.php
+     *      • group=2 → lang/{locale}/settings/*.php
+     *      • group=3 → таблица settings_registry (через saveToDb)
+     *
+     * @param  string       $key           Уникальный ключ настройки.
+     * @param  mixed        $value         Новое значение настройки.
+     * @param  string|null  $lang          Код языка (для локализованных настроек, group=2).
+     * @param  string|null  $type          Тип значения (string, int, bool, json и т.д.), по умолчанию "string".
+     * @param  bool|null    $is_active     Активна ли настройка (true — включена).
+     * @param  bool|null    $is_locked     Заблокирована ли настройка (true — защищена от изменений в админке).
+     * @param  string|null  $description   Описание настройки (для документации и интерфейсов).
+     * @param  string|null  $environment   Окружение ("production", "staging", "local" и т.д.), по умолчанию "production".
+     * @param  int|null     $updatedBy     ID пользователя, изменившего настройку (опционально).
+     *
+     * @return bool Возвращает true, если настройка успешно обновлена, иначе false.
+     *
+     * @throws \InvalidArgumentException Если указана недопустимая группа.
+     * @throws \RuntimeException Если попытка изменить системную группу (4).
+     * @throws \Exception При ошибках сохранения или валидации.
+     */
     public function updateSetting(
         string $key,
         mixed $value,
-        int $group,
-        string $type = 'string',
+        ?string $lang = null,
+        ?string $type = 'string',
+        ?bool $is_active = true,
+        ?bool $is_locked = false,
         ?string $description = null,
-        string $environment = 'production',
-        ?int $updatedBy = null,
-        ?string $lang = null
+        ?string $environment = 'production',
+        ?int $updatedBy = null
     ): bool {
 
-        // 1. Проверка допустимых групп
-        $allowedGroups = config('settings.group_configs'); // (1=config, 2=lang, 3=db,...)
+        // 1. Проверить, существует ли ключ в кеше
+        // - Вернет гарантированно масив при условии что если ключ найден!
+        //[
+        //    "group"     => 1/2/3      - номер одной из групп
+        //    "type"      => "string"   - тип даных которые храняться
+        //    "is_active" => true
+        //    "is_locked" => false
+        //    "locale"    => "ru/en"
+        //]
+        $meta = $this->getOrRestoreRedis($key);
+
+        // 2. Если ключ в кеше не найден
+        if ($meta === null) {
+
+            // 3. Проверить, существует ли ключ в БД с данными
+            $meta = DB::table('settings_registry')
+                ->select('id', 'group', 'type', 'is_active', 'is_locked', 'locale')
+                ->where('key', $key)
+                ->first();                      // Вернёт объект или null
+
+            // 4. Если и в БД нет ключа и данных
+            if (!$meta) {
+                Log::error("Попытка обновления несуществующего ключа", [
+                    'key'   => $key,
+                ]);
+                return false;
+            }
+        }
+
+        // 3. Определяем группу (1=config, 2=lang, 3=db,...), с учетом от куда были полученны мета-данные из кеша или Бд
+        $group = (int) (is_object($meta) ? $meta->group : ($meta['group'] ?? 0));
+
+        // 4. Получить локаль при любых вариантов (object | array | null), чтобы небыло пустых полей
+        // Если $meta объект — берём $meta->locale, если пусто — подставляем дефолт из конфига.
+        // Если $meta массив — аналогично $meta['locale'].
+        // Если $meta нет — сразу дефолт.
+        // Приведение к (string) гарантирует, что даже пустой null станет строкой.
+        $locale = (string) (
+            is_object($meta)
+                ? (!empty($meta->locale) ? $meta->locale : config('settings.lang_trs'))
+                : (is_array($meta)
+                    ? (!empty($meta['locale']) ? $meta['locale'] : config('settings.lang_trs'))
+                    : config('settings.lang_trs'))
+            );
+
+        // 5. Отловить попытку - полностью предотвращает случайное обновление ключа другой локали (*:ru vs *:en).
+        if ($lang !== null && $lang !== $locale) {
+            Log::error("Указанная локаль не совпадает с локалью в мета-данных и её изменять нельзя!", [
+                'key'   => $key,
+                'group' => $group,
+                'lang'  => $lang,
+                'locale' => $locale,
+            ]);
+            throw new \InvalidArgumentException(
+                sprintf(
+                    "С указанной '%s' локалью не найден ключ, который есть с локалью '%s'.",
+                    $lang,
+                    $locale
+                )
+            );
+        }
+
+        $lang = $locale;     // Синхронизируем локали на случай если $lang == null
+
+        // 6. Проверка допустимых групп
+        // - Практически такой вариант не возможен, но на всякий пожарный (от взлома кеша).
+        $allowedGroups = config('settings.group_configs');
         if (!in_array($group, $allowedGroups, true)) {
             Log::error("Указана некорректная группа при обновлении настроек", [
-                'key'         => $key,
-                'group'       => $group
+                'key'   => $key,
+                'group' => $group
             ]);
             throw new \InvalidArgumentException("Invalid group '{$group}'. Allowed values: 1=config, 2=lang, 3=db");
         }
 
-        // 2. Запрещаем группу 4 Запрещено менять системные настройки по умолчанию - .\config\settings.php
+        // 7. Запрещаем системную группу (4) обновлять
+        // - Практически такой вариант не возможен, но на всякий пожарный (от взлома кеша).
         if ($group === 4) {
             Log::warning("Попытка изменить системную группу настроек (group=4), доступ запрещён", [
                 'key'   => $key,
-                'group' => $group
+                'group' => 4
             ]);
-            throw new \RuntimeException("Изменение группы '{$group}' запрещено");
+            throw new \RuntimeException("Изменение системной группы (4) запрещено");
         }
 
-        // Собрать ключ исходч из номера группы и уникального ключа
-        $k_group = $this->makeGroupKey($group, $key);
+        // 8. Преобразуем meta в массив для удобства дальнейшей работы
+        $meta = (array) $meta;
 
-        // 3. Определить существования уникального ключа в Redis или DB
-        if(!$this->getOrRestore($k_group, $key, ))
-        {
-            return false; // Ключ не зарегистрирован в системе выходим
-        }
+        // Обновления
+        return DB::transaction(function () use (
+            $key, $value, $type, $description, $environment, $lang, $is_active, $is_locked, $meta, $updatedBy, $group
+        ) {
 
-        // Теперь по ключу поменять даные :
-        // 1 Основной кеш
-        // 2 Поменять в файлах или бд setting
+            /**  9. Собрать данные для сохранения в кеше
+             * group - Номер группы, по номеру группы в будушем будем определять где искать в каком файле из четырех груп
+             * type - Тип данных которые храняться под этим ключом
+             * is_active - Активна настройка да нет
+             * is_locked - Флаг запрет на изменения или удаления настройки
+             * locale - Язык настройки (спец поле для группы 2)
+             */
+            $meta_data = [                                  // Передаем данные для хранения
+                'group'     => (int) $group,
+                'type'      => (string) $type,
+                'is_active' => (bool) $is_active,
+                'is_locked' => (bool) $is_locked,
+                'locale'    => (string) $lang
+            ];
 
-        // Остановка здесь!
+            // 10. Обновления кеша ключей с мета-данными
+            $success = $this->cache->put(
+                type:    self::CACHE_META,
+                key:     $key,
+                value:   $meta_data,
+                ttl:     self::C_TTL_META,
+                service: self::CACHE_SERVICE
+            );
 
+            if (!$success) {
+                Log::warning("Кеш метаданных не обновлён", ['key' => $key]);
+            }
 
+            // 11. Сохранить во временный кеш метаданые - (он здесь не работает это для теста!)
+            self::$requestCache[$key] = $meta_data;
 
-        dd($k_group);
+            // Извлекаем id
+            $registryId = $meta['id'] ?? null;
 
+            // 12. Обновить данные в определенной группее исходя из номера группы.
+            // Новые значения попросту сотрут старые и запишет новые как ф файлах так и в БД
+            // После обновления группа обновит временный кеш и основной для данных
+            match ($group) {
+                1 => $this->saveToConfig($key, $value),
+                2 => $this->saveToLang($key, $value, $lang),
+                3 => $this->saveToDb($registryId, $value, $key),
+                default => throw new \Exception("Unknown group {$group}"),
+            };
 
+            // 10. Обновить запись в settings_registry (это основная таблица справочник)
+            $updated = DB::table('settings_registry')
+                ->where('key', $key)
+                ->update([
+                    'group'        => $group,
+                    'type'         => $type,
+                    'locale'       => $lang,
+                    'description'  => $description,
+                    'environment'  => $environment,
+                    'is_active'    => $is_active,
+                    'is_locked'    => $is_locked,
+                    'updated_by'   => $updatedBy ?? null,
+                    'updated_at'   => now(),
+                ]);
 
+            Log::info("Настройка обновлена", [
+                'key'        => $key,
+                'group'      => $group,
+                'updated_by' => $updatedBy
+            ]);
 
-
-
-
-
-        //return $this->cache->updateOrFail(
-        //    type: self::CACHE_TYPE,     // например "config"
-        //    key: $key,
-        //    value: $value,
-        //    ttl: 86400,                 // или вынеси в константу
-        //    service: self::CACHE_SERVICE
-        //);
+            return (bool) $updated;
+        });
     }
 
     /**
-     * Определить по имени ключа есть лион в системе
-     *
-     *  $this->cache->exists(self::CACHE_DATA, $key_group, self::CACHE_SERVICE);
-     *  $this->cache->exists(self::CACHE_META, $key, self::CACHE_SERVICE)
+     * Проверить, есть ли ключ в Redis.
+     * Если есть — вернуть данные.
+     * Если нет — вернуть null.
      */
-    public function getOrRestore(string $key_group, string $key) : bool {
-
-        // Если нет ключа в основном кеше
-        if (!$this->cache->exists(self::CACHE_META, $key, self::CACHE_SERVICE)){
-
-            // Проверка есть ли ключ в БД
-            if (DB::table('settings_registry')->where('key', $key)->exists()) {
-                return true;  // Ключ есть
-            }
-
-            Log::warning("Попытка найти ключ не удачна '{$key}'", [
-                'key'       => $key,            // Ключ
-                'key_cache' => $key_group,      // собранный реальный ключ кеша
-            ]);
-
-            return false;
+    public function getOrRestoreRedis(string $key): ?array
+    {
+        // 1. Проверяем локальный кеш (in-memory) внутри PHP-запроса
+        if (isset(self::$requestCache[$key])) {
+            return self::$requestCache[$key];
         }
 
-        // Ключ найден в основном кеше
-        return true;
+        // 2. Проверяем наличие ключа в основном Кеше для ключей и мета-дынных, если нет ернуть null
+        if (!$this->cache->exists(self::CACHE_META, $key, self::CACHE_SERVICE)) {
+            return null;
+        }
+
+        // 3. Получаем данные
+        $data = $this->cache->get(self::CACHE_META, $key, self::CACHE_SERVICE);
+
+        // 4. Проверяем структуру
+        return is_array($data) ? $data : null;
     }
 
 
+    // -- END -- Обновления даных (настроек) ----------------------------------------------------------------------------
 
 
 
-    //// 1 Проверить существует ли ключ 2 варианта  1 кеш 2 если в кеше нет БД но + восоздания
+    /**
+     * Удалить любую настройку (включая сам ключ и все связанные данные).
+     *
+     * Только для супер-админа или системных операций!
+     *
+     * Действия:
+     *  - Проверяет наличие ключа в кеше или БД.
+     *  - Определяет группу (1=config, 2=lang, 3=db).
+     *  - Удаляет:
+     *      - данные из кеша (Redis),
+     *      - временный кеш запроса,
+     *      - данные из файлов / языковых файлов / таблицы settings,
+     *      - сам ключ из settings_registry.
+     *
+     * @param string $key        Уникальный ключ настройки.
+     * @param string|null $lang  Локаль (только для группы 2).
+     *
+     * @return bool
+     *
+     * @throws \InvalidArgumentException|\RuntimeException
+     */
+    public function deleteSettingCache(
+        string $key,          // Уникальный ключ
+        ?string $lang = null, // Локаль - удалить в конкретный ключ с конкретным переводом
+    ): bool {
 
-// Редис ключ
-//$success = $this->cache->put(
-//type:    self::CACHE_META,                    // Тип данных - meta
-//key:     $key,                                // Уникальный ключ, по этому ключу будем в будущем конретно получать настройки
-//value:   ['group' => $group,'type' => $type, 'is_active' => true, 'is_locked' => false], // Передаем данные для хранения
-//ttl:     self::C_TTL_META,                    // Время жизни если null то год
-//service: self::CACHE_SERVICE                  // Имя сервиса
-//);
-//self::$requestCache[$key] = $value;
+        dd('Остановка здесь');
 
-// Редис данные
+
+
+        // 1. Проверить, существует ли ключ в кеше
+        // - Вернет гарантированно масив если ключ найден
+        //[
+        //    "group"     => 1/2/3      - номер одной из групп
+        //    "type"      => "string"   - тип даных которые храняться
+        //    "is_active" => true
+        //    "is_locked" => false
+        //]
+        $meta = $this->getOrRestoreRedis($key);
+
+        // 2. Если ключ в кеше не найден — ищем в БД
+        if ($meta === null) {
+            $meta = DB::table('settings_registry')
+                ->select('id', 'group', 'type', 'is_active', 'is_locked')
+                ->where('key', $key)
+                ->first();                      // Вернёт объект или null
+            if (!$meta) {
+                Log::error("Попытка удаления несуществующего ключа", [
+                    'key'   => $key,
+                ]);
+                return false;
+            }
+        }
+
+        // 3. Определяем группу (1=config, 2=lang, 3=db)
+        $group = (int) (is_object($meta) ? $meta->group : ($meta['group'] ?? 0));
+
+        // 4. Проверка допустимых групп
+        $allowedGroups = config('settings.group_configs');
+        if (!in_array($group, $allowedGroups, true)) {
+            Log::error("Некорректная группа при удалении настройки", compact('key', 'group'));
+            throw new \InvalidArgumentException("Invalid group '{$group}'. Allowed values: 1=config, 2=lang, 3=db");
+        }
+
+        // 5. Запрещаем системную группу (4)
+        if ($group === 4) {
+            Log::warning("Попытка удалить системную настройку (group=4)", compact('key', 'group'));
+            throw new \RuntimeException("Удаление системной группы (4) запрещено");
+        }
+
+        // 6. Преобразуем meta в массив для удобства дальнейшей работы
+        $meta = (array) $meta;
+        $registryId = $meta['id'] ?? null;
+
+        // Обновления
+        return DB::transaction(function () use ($key, $lang, $registryId, $group) {
+
+            // 1. Удалить данные из группы  (storage/lang/bd)
+            //match ($group) {
+            //    1 => $this->deleteFromConfig($key),
+            //    2 => $this->deleteFromLang($key, $lang),
+            //    3 => $this->deleteFromDb($registryId, $key),
+            //    default => throw new \RuntimeException("Unknown group {$group}"),
+            //};
+
+            /** 2. Удалить временный кеш  **/
+            //if (isset(self::$requestCache[$key])) {
+            //    unset(self::$requestCache[$key]);
+            //}
+
+            /** 3. Удалить из Redis **/
+            $keyCache = $this->makeGroupKey($group, $key);     // Пример ключа: config:site_name
+
+
+
+
+            dd($keyCache);
+
+
+            //if($lang === null){
+            //    $typeCache = $this->makeGroupType($group, $key);
 //$k_group = self::C_LANG . ":{$key}:{$lang}";
-//$success = $this->cache->put(
-//    type:    self::CACHE_DATA,      // Тип данных (data --> data)
-//    key:     $k_group,              // Прмер ключа в готовом виде под ним можно смотреть данные +- (все ключи разные) - data:s_cfg:lang:site_name:ru
-//    value:   $value,
-//    ttl:     86400,                 // Время жизни если null то год
-//   service: self::CACHE_SERVICE    // Имя сервиса (settings --> s_cfg)
-//);
+            //}else{
+
+
+           // }
+
+            dd($keyCache);
+
+            //..$typeCache = $this->makeGroupType($group, $key);
+
+
+            //$k_group = self::C_LANG . ":{$key}:{$lang}";
+
+
+            //try {
+            //    // Удалить из кеша группы
+            //    $this->cache->deleteOrFail(
+            //        type: self::CACHE_DATA,
+            //        key: $keyCache,
+            //        service: self::CACHE_SERVICE
+            //    );
+            //    // Удалить из ключа кеша
+            //    $this->cache->deleteOrFail(
+            //        type: self::CACHE_META,
+            //        key: $key,
+            //        service: self::CACHE_SERVICE
+            //    );
+            //} catch (\Throwable $e) {
+            ///    Log::error("Ошибка при удалении кеша настройки", [
+            //        'key' => $key,
+            //        'group' => $group,
+            //        'error' => $e->getMessage(),
+            //    ]);
+           // }
 
 
 
 
-    //-----------------------
-    public function deleteSettingCache(string $key): bool
-    {
-        //return $this->cache->deleteOrFail(
-        //    type: self::CACHE_TYPE,
-        //    key: $key,
-        //    service: self::CACHE_SERVICE
-        //);
+
+
+
+
+
+
+
+
+
+
+
+
+            // Получить ключ кеша
+            //$key_cache = $this->makeGroupKey($group, $key);
+
+            // Получить тип кеша
+            //$type_cache = $this->makeGroupType($group, $key);
+
+            //dd();
+
+            // Удалить нужно исходя из группы по ключу все даные включая сам ключ
+
+            // 1. - Удалить из группы
+            // $group = здесь группа одна из 1,2,3
+            // group=1 → storage/settings.php
+            // group=2 → lang/{locale}/settings/*.php
+            // group=3 → таблица settings_registry --> settings   (settings_registry.id == settings.registry_id)
+
+            // 2. удалить из временого кеша в рамках запроса
+            // self::$requestCache[$key] = $value;
+
+            // 3. Удалить из основного кеша
+            //$this->cache->deleteOrFail(
+            //    type: $type_cache,
+            //    key: $key_cache,                       // Пример ключа:  "data:s_cfg:lang:autor:ru"
+            //    service: self::CACHE_SERVICE           // Имя сервиса в данном случаее 'settings'
+            //);
+
+        });
+
     }
 
+    /** Удаление из config (storage/settings.php) */
+    private function deleteFromConfig(string $key): void
+    {
+        // Реализуй позже — например, переписать config/settings.php без этой записи
+        Log::debug("Удалена настройка из config", ['key' => $key]);
+    }
 
+    /** Удаление из lang/{locale}/settings */
+    private function deleteFromLang(string $key, ?string $lang): void
+    {
+        // Реализуй позже — можно просто удалить перевод из языкового файла
+        Log::debug("Удалена настройка из lang", ['key' => $key, 'lang' => $lang]);
+    }
 
+    /** Удаление из базы (settings, settings_registry) */
+    private function deleteFromDb(?int $registryId, string $key): void
+    {
+        if ($registryId) {
+            DB::table('settings')->where('registry_id', $registryId)->delete();
+        }
+        Log::debug("Удалена настройка из БД", ['key' => $key]);
+    }
 
+    ///** Исходя из группы получить тип кеша **/
+    //private function makeGroupType(int $group, string $key): string
+    //{
+    //    return match ($group) {
+    //        1 => self::C_CONFIG,           // 'config' - Ключ типа для группы (.\storage\settings.php)
+    //        2 => self::C_LANG,             // 'lang'   - Ключ типа для группы (.\lang\{locale}\settings\settings.php)
+    //        3 => self::C_DB,               // 'db'     - Ключ типа для группы (БД)
+    //        default => null,               // так как это может быть для удаления 4 групу не ставим чтобы случайно не удалить!
+    //    };
+    //}
 
+    //public function getOrFail(string $key, ?string $locale = null): mixed
+    //{
+    //    return $this->get($key, '__FAIL__', $locale) === '__FAIL__'
+    //        ? throw new \RuntimeException("Setting {$key} not found")
+    //        : $this->get($key, null, $locale);
+    //}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ///**
+    // * Загрузить из системных данных ./config/settings.php
+    // * Файл хранит дефолтнфе настройки сайта
+    // */
+    //private function loadFromDefault(string $key): mixed
+    //{
+    //    $file = config_path('settings.php');
+    //    if (!file_exists($file)) {
+    //        return null;
+    //    }
+    //    $data = include $file;
+    //    return $data[$key] ?? null;
+    //}
 }
