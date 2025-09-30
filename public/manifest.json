@@ -1,0 +1,47 @@
+{
+  "name": "Morkov",
+  "short_name": "Morkov",
+  "description": "Multipurpose E-Commerce Bootstrap Template",
+  "lang": "ru",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#131920",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/storage/uploads/system/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/storage/uploads/system/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/storage/uploads/system/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/storage/uploads/system/misc/images/original/desktop-screenshot-1280x720.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/storage/uploads/system/misc/images/original/mobile-screenshot-640x1136.png",
+      "sizes": "640x1136",
+      "type": "image/png"
+    }
+  ],
+  "id": "/"
+}

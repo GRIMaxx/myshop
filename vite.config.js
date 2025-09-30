@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import tailwindcss from '@tailwindcss/vite';
 
 import fs from 'fs';
 import path from 'path';
@@ -8,11 +7,21 @@ import path from 'path';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: [
+                //'resources/css/app.css',
+                'resources/scss/app.scss', 				// Подключаем SCSS
+                //'resources/js/app.js'
+            ],
             refresh: true,
         }),
-        tailwindcss(),
     ],
+    resolve: {
+        alias: {
+            // чтобы можно было писать `@import "bootstrap/..."` из SCSS
+            'bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
+        },
+    },
+    // -- Настройки связи с сервером + сертификат
     server: {
         host: '0.0.0.0',
         port: 5173,

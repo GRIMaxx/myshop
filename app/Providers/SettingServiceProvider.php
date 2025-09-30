@@ -1,5 +1,8 @@
 <?php
-
+/**
+    Обработка настроек сайта
+    Получить данные пример: app('settings')->get()
+ **/
 namespace App\Providers;
 
 use App\Services\Setting\SettingService;

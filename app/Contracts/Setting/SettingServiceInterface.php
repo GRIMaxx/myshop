@@ -39,8 +39,8 @@ interface SettingServiceInterface
         ?int $updatedBy = null
     ): bool;
 
+    public function get(string $key, mixed $default = null, ?string $locale = null): mixed;
 
-
-
+    public function deleteSettingCache(string $key, ?string $lang = null): bool;
 
 }
