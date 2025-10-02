@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"jsx": "react-jsx",
+		"moduleResolution": "node",
+		"strict": true,
+		"esModuleInterop": true,
+		"baseUrl": "./",
+		"paths": {
+			"@/*": ["resources/js/*"],
+            "@libs/*": ["resources/js/libs/*"],
+            "@react/*": ["resources/js/react/*"],
+            "@react_utils/*": ["resources/js/react/utils/*"],
+            "@react_components/*": ["resources/js/react/components/*"],
+            "@icons/*": ["resources/icons/*"]
+		},
+		"skipLibCheck": true,
+        "allowJs": true,
+        "allowImportingTsExtensions": true
+	},
+	"include": ["resources/js"]
+}

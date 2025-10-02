@@ -25,27 +25,31 @@
         <x-head :title="$title" :description="$description" />
     @endcache
 
-    {{-- Для тестов скомпилированный css
-        <link rel="stylesheet" href="{{ 'assets/css/theme.min.css' }}" id="theme-styles">
-    --}}
+    {{-- Для тестов скомпилированный css<link rel="stylesheet" href="{{ 'assets/css/theme.min.css' }}" id="theme-styles">--}}
+
+    @vite('resources/scss/app.scss') {{-- Собирает CSS/SCSS (Bootstrap overrides + кастомные стили) в один CSS-бандл.--}}
 
     {{--
-    @viteReactRefresh
-    @vite(['resources/js/app.tsx', 'resources/scss/app.scss', 'resources/css/app.css'])--}}
+            Основной JS + глобальные библиотеки - подключает главный JS, где импортированы jQuery, bootstrap, libs,
+            React компоненты через React/index.tsx.
+        --}}
+    @vite('resources/js/app.js')
 
-    @vite(['resources/scss/app.scss'])
+    {{-- React HMR - подключает HMR для всех React entry points, указанных в vite.config.js --}}
+    @viteReactRefresh
+
 </head>
 <body>
 
-    <!-- Customizer offcanvas ------------------------------------------------------------------------>
+    <!-- Customizer offcanvas ----------------------------------------------------------------------->
     <x-customizer-offcanvas />
-    <!-- END Customizer offcanvas -------------------------------------------------------------------->
+    <!-- END Customizer offcanvas ------------------------------------------------------------------->
 
-    <!-- Shopping cart offcanvas --------------------------------------------------------------------->
+    <!-- Shopping cart offcanvas -------------------------------------------------------------------->
     <x-shopping-cart-offcanvas />
-    <!-- END Shopping cart offcanvas ----------------------------------------------------------------->
+    <!-- END Shopping cart offcanvas ---------------------------------------------------------------->
 
-    <!-- Navigation bar (Page header) ---------------------------------------------------------------->
+    <!-- Navigation bar (Page header) --------------------------------------------------------------->
     <header class="navbar navbar-expand-lg navbar-dark bg-dark d-block z-fixed p-0"
         data-sticky-navbar="{&quot;offset&quot;: 500}"
     >
@@ -54,7 +58,8 @@
             <div class="navbar-stuck-hide pt-1"></div>
             <div class="row flex-nowrap align-items-center g-0">
                 <!-- Левая часть --------------------------------------------------------------------->
-                <div class="col col-lg-3 d-flex align-items-center">
+                {{--col-lg-3 изменил (для увиличения длинны поиска поля ) --}}
+                <div class="col col-lg-2 d-flex align-items-center">
 
                     <!-- Mobile offcanvas menu toggler (Hamburger) ----------------------------------->
                     <x-mobile-offcanvas-menu-toggler />
@@ -68,10 +73,11 @@
                 </div>
                 <!--End Левая часть ------------------------------------------------------------------>
                 <!-- Правая часть -------------------------------------------------------------------->
-                <div class="col col-lg-9 d-flex align-items-center justify-content-end">
-                    <!-- Search visible on screens --------------------------------------------------->
+                {{--col-lg-9  изменил (для увиличения длинны поиска поля ) --}}
+                <div class="col col-lg-10 d-flex align-items-center justify-content-end">
+                    <!-- Search visible on screens lg ------------------------------------------------>
                     <x-search-lg />
-                    <!-- End Search visible on screens ----------------------------------------------->
+                    <!-- End Search visible on screens lg -------------------------------------------->
 
                     <!-- Sale link visible on screens > 1200px wide (xl breakpoint) ------------------>
                     <x-sale-link-lg />
@@ -151,15 +157,15 @@
         </div>
         <!-- END Main navigation that turns into offcanvas on screens < 992px wide (lg breakpoint)-->
     </header>
-    <!-- END Navigation bar (Page header) ---------------------------------------------------------->
+    <!-- END Navigation bar (Page header) ----------------------------------------------------------->
 
-    <!-- Page content ------------------------------------------------------------------------------>
+    <!-- Page content ------------------------------------------------------------------------------->
     <main class="content-wrapper">
         @yield('content')
     </main>
-    <!-- END Page content ------------------------------------------------------------------------->
+    <!-- END Page content --------------------------------------------------------------------------->
 
-    <!-- Page footer ------------------------------------------------------------------------------>
+    <!-- Page footer -------------------------------------------------------------------------------->
     <footer class="footer position-relative bg-dark">
         <span class="position-absolute top-0 start-0 w-100 h-100 bg-body d-none d-block-dark"></span>
         <div class="container position-relative z-1 pt-sm-2 pt-md-3 pt-lg-4" data-bs-theme="dark">
@@ -179,18 +185,21 @@
         </div>
     </footer>
 
-    <!-- Back to top button -------------------------------------------------------------------------->
+    <!-- Back to top button ------------------------------------------------------------------------->
     <x-back-to-top-button />
-    <!-- END Back to top button ---------------------------------------------------------------------->
+    <!-- END Back to top button --------------------------------------------------------------------->
 
-@php
-    //dd($store);
-@endphp
+    {{-- Test php --}}
+    @php
+        //dd($store);
+    @endphp
 
-
-
-
-
-
+    {{-- Test js --}}
+    <script>
+        //window.addEventListener('load', () => {
+            //console.log('Page is fully loaded');
+            //console.log(window.bootstrap);  // Проверим, доступен ли объект
+        //});
+    </script>
 </body>
 </html>
