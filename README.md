@@ -1,4 +1,4 @@
-# MyShop Project
+# MyShop Project servicegxx@gmail.com
 
 This is my personal marketplace project and a demonstration of my skills in working with Laravel 12, PHP, and other technologies.
 
