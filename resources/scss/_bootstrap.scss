@@ -1,0 +1,12 @@
+// _bootstrap.scss
+@use "sass:color";
+
+@use "bootstrap/scss/functions" as *;
+@use "bootstrap/scss/mixins" as *;
+
+// теперь переменные подключаем после миксинов
+@use "bootstrap/scss/variables" as *;
+@use "bootstrap/scss/variables-dark" as *;
+
+@use "bootstrap/scss/maps" as *;
+@use "bootstrap/scss/utilities" as *;
