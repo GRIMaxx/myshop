@@ -16,5 +16,13 @@ return [
     'store'             => 'default',        // Это каталог в котором все шаблоны *.blade.php аналог темы или отдельного магазина по умолчанию
     'theme_page'        => 'light',          // Тема темная или светлая
     'pwa'               => false,            // Включена или нет система PWA
+    'search_show_lg'    => false,            // Показать поле поиска lg
+    'search_show_md'    => false,            // Показать поле поиска md
+    'search' => [                            // Поисковая система
+        'driver' => 'meilisearch',           // Использовать поисковый движок - (meilisearch, elasticsearch, database)
+
+
+    ]
+
 
 ];

@@ -21,7 +21,14 @@ class TestController extends Controller
     {
         // -- Установка конфигов ---------------------------------
         // g-1   storage
-        //$this->setting->addSetting('store', 'default', 1);
+        //$this->setting->addSetting('search_show_md', true, 1);
+
+        // Не удалять добавляю конфиги для поисковой системы!
+        //$this->setting->addSetting('search', [
+        //    'driver' => 'meilisearch',
+        //
+        //], 1, 'array');
+
 
         // g-2   переводы
         //$this->setting->addSetting('site_name_en', 'Carrot', 2, 'string','en');

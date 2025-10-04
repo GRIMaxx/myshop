@@ -8,7 +8,9 @@
 		"esModuleInterop": true,
 		"baseUrl": "./",
 		"paths": {
-			"@/*": ["resources/js/*"],
+			"@js/*": ["resources/js/*"],
+            "@js_customs": ["resources/js/customs/*"],
+            "@js_c_components": ["resources/js/customs/components/*"],
             "@libs/*": ["resources/js/libs/*"],
             "@react/*": ["resources/js/react/*"],
             "@react_utils/*": ["resources/js/react/utils/*"],

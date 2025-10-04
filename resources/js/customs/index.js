@@ -1,23 +1,19 @@
 
-import './components/sticky-navbar.js';         // Липкий выдвижной навбар верхний
-import './components/dropdown-hover.js'         // Выпадают менюшки (+bootstrap)
-import './components/scroll-top-button.js';     // Кнопка подняться быстро в верх
-import './components/popover.js';               // (+bootstrap)
+import '@js_c_components/sticky-navbar.js';         // Липкий выдвижной навбар верхний
+import '@js_c_components/dropdown-hover.js'         // Выпадают менюшки (+bootstrap)
+import '@js_c_components/scroll-top-button.js';     // Кнопка подняться быстро в верх
+import '@js_c_components/popover.js';               // (+bootstrap)
+import '@js_c_components/autofocus.js';				// Авто фокус на поле
+import '@js_c_components/carousel.js';				// Слайдер на главной странице верх основной
+import '@js_c_components/tooltip.js';               // (+bootstrap)
+import '@js_c_components/svg-sprite-loader.js';		// Спрайт с иконками (https://icon-sets.iconify.design/)
 
-// -- Остановка здесь !
+// -- Пока все
 
-//import './components/svg-sprite-loader.js';		// Спрайт с иконками (https://icon-sets.iconify.design/)
 //import './components/pwa/pwa.js';               // Механизм PWA + SW (+bootstrap)
 //import './components/sticky-element.js';		// Фиксированный верхний навбар
-//import './components/autofocus.js';				// Авто фокус на поле
-
-
-// Для определеных (Все зависимости подключены но модули не настронны) :
-
-//import './components/carousel.js';				// Слайдер на главной странице верх основной
 //import './components/lightbox.js';              // Галерея изображений
 //import './components/countdown.js';  			// секундомер или таймер
-//import './components/tooltip.js';             // (+bootstrap)
 //import './components/password-toggle.js';       //
 //import './components/count-input.js';			//
 //import './components/input-formatter.js';       //

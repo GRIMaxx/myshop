@@ -9,6 +9,8 @@ use App\Services\Setting\SettingService;
 use App\Contracts\Setting\SettingServiceInterface;
 use App\Contracts\Cache\CacheServiceInterface;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
+
 class SettingServiceProvider extends ServiceProvider
 {
     /**

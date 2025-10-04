@@ -33,7 +33,7 @@
             Основной JS + глобальные библиотеки - подключает главный JS, где импортированы jQuery, bootstrap, libs,
             React компоненты через React/index.tsx.
         --}}
-    @vite('resources/js/app.js')
+    @vite('resources/js/app.tsx')
 
     {{-- React HMR - подключает HMR для всех React entry points, указанных в vite.config.js --}}
     @viteReactRefresh

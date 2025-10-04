@@ -12,7 +12,7 @@ export default defineConfig({
             // Vite будет компилировать SCSS в CSS и выдавать app.css.
             input: [
                 // Этих точек достаточно для полной работы!
-                'resources/js/app.js',              // Глобальная точка
+                'resources/js/app.tsx',             // Глобальная точка
                 'resources/scss/app.scss',          // Подключаем SCSS (CSS, Переопределения Bootstrap, Кастомные компоненты, Глобальные стили приложения)
             ],
             refresh: true,
@@ -26,7 +26,9 @@ export default defineConfig({
             // чтобы можно было писать `@import "bootstrap/..."` из SCSS
             'bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
 
-            '@': path.resolve(__dirname, 'resources/js/'),
+            '@js': path.resolve(__dirname, 'resources/js/'),
+            '@js_customs': path.resolve(__dirname, 'resources/js/customs/'),
+            '@js_c_components': path.resolve(__dirname, 'resources/js/customs/components/'),
             '@libs': path.resolve(__dirname, 'resources/js/libs/'),
             '@react': path.resolve(__dirname, 'resources/js/react/'),
             '@react_utils': path.resolve(__dirname, 'resources/js/react/utils/'),

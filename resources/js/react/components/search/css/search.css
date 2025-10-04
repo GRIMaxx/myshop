@@ -1,0 +1,76 @@
+/** CSS Стили для поисковой системы LG размер **/
+
+/** Клас (исправления так как не работает в поисковое поле закругления lg) **/
+.rounded-start-gx {
+    border-bottom-left-radius: 50rem !important;
+    border-top-left-radius: 50rem !important;
+}
+.s-control-gx {border-color: #fff !important;}
+.search-panel {
+    background: #fff;                           /* белый фон как на скрине */
+    border-radius: 8px;                         /* скругления */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.search-results {
+    border: none;
+}
+.search-results .list-group-item {
+    display: flex;
+    align-items: center;
+    border: none;                               /* без бордеров */
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.search-results .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+.search-thumb {
+    width: 70%;
+    height: 70%;
+    object-fit: cover;
+    border-radius: 6px;
+}
+/* Если это SVG (use) */
+.search-icon-wrapper svg.search-thumb {
+    width: 70%;
+    height: 70%;
+    fill: currentColor;                         /* унаследует цвет текста */
+}
+.search-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #f8f9fa;                  /* или прозрачный */
+    display: flex;                              /* <-- делаем flex */
+    align-items: center;                        /* <-- вертикальное выравнивание */
+    justify-content: center;                    /* <-- горизонтальное */
+    /**flex-shrink: 0; **/                      /* чтобы не сжимался */
+    overflow: hidden;
+}
+.search-icon-wrapper img,
+.search-icon-wrapper svg {
+    width: 95%;                                 /** тестить для фото 85 для иконок 75 **/              /* иконка/картинка всегда пропорционально */
+    height: 95%;
+    object-fit: contain;                        /* если png */
+}
+/*******************************************************************************************/
+.icon-scroll {
+    min-width: 0; /* важно в flex-контейнере */
+    flex: 1 1 auto; /* занимает доступное место, но позволяет переполняться */
+
+
+
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch; /* плавный скролл на iOS */
+    scrollbar-width: none; /* скрыть скролл в Firefox */
+}
+.icon-scroll::-webkit-scrollbar {
+    display: none; /* скрыть скролл в Chrome/Safari */
+}
+.icon-scroll i {
+    display: inline-block; /* чтобы иконки не переносились */
+    font-size: 1rem; /* можно менять размер */
+}
+
+

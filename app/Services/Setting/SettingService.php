@@ -3,13 +3,17 @@
  * Сохраненные даные:
  *
  * 1 Группа:
- *  theme_page
- *  pwa
+ *  theme_page, pwa, search_show_lg, search_show_md,
+ *
+ *
+ *
+ *
  *
  * 2 Группа:
  *  site_name_en, site_name_ru
  *  meta_description_en, meta_description_ru
  *  meta_keywords_en, meta_keywords_ru
+ *
  *
  *
  *
@@ -94,7 +98,8 @@ class SettingService implements SettingServiceInterface
      * int ('items_per_page' => 20)
      * bool ('debug' => true)
      * array (например, 'currencies' => ['USD', 'EUR'])
-     * не стоит хранить object — конфиг читается при загрузке приложения, там должны быть простые структуры.
+     * не стоит хранить object — конфиг читается при загрузке приложения,
+     * там должны быть простые структуры.
      *
      * Примеры использования:
      *
@@ -103,7 +108,7 @@ class SettingService implements SettingServiceInterface
      * $service->addSetting('debug_mode', true, 1, 'bool');                   - bool
      * $service->addSetting('currencies', ['USD', 'EUR', 'UAH'], 1, 'array'); - array
      * -------------------------------------------------------------------------------------
-     * Допустимые типы Группа 2:
+     * Допустимые типы Группа 2 (переводы - конфиг):
      *
      * string (99% случаев: 'site_name' => 'Магазин')
      * array (например, 'greeting' => ['morning' => 'Доброе утро', 'evening' => 'Добрый вечер'])
