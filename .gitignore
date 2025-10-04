@@ -6,7 +6,7 @@
 /bootstrap/cache/*
 /public/hot
 /public/storage
-/resources/scss
+/resources/scss/*
 /.idea
 .DS_Store
 .env.local
