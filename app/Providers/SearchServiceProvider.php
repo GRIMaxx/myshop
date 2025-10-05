@@ -23,7 +23,18 @@ class SearchServiceProvider extends ServiceProvider
 
             // Получаем медод поиска.
             $settings = app('settings');
-            $driver = $settings->get('search.driver', config('settings.search.driver', 'elasticsearch'));
+
+            // Так как отследить загрузку провайдеров Setting и Cache сложно и они не предсказуемы
+            // Установим на пожарный случай проверку
+            // Если объект существует и не null, берём драйвер из него
+            if ($settings) {
+                $driver = data_get($settings->get('search'), 'driver', null);
+            }
+
+            // Если в настройках нет — fallback на config(), а если и там нет — жёсткий дефолт
+            if (empty($driver)) {
+                $driver = config('settings.search.driver', 'meilisearch');
+            }
 
             return match ($driver) {
                 'meilisearch' => $app->make(MeilisearchSearchService::class),
@@ -40,37 +51,42 @@ class SearchServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Получить и Обьявить глобально а определеный шаблон переменные для поисковой системы.
-        $this->registerSearchViewComposers();
+        // Композер регистрируется только после того, как все сервис-провайдеры загружены и отработали
+        // (settings, кеш гарантированно доступены).
+        //$this->app->booted(function () {
+            //$this->registerSearchViewComposers();
+        //});
     }
 
     protected function registerSearchViewComposers(): void
     {
-        View::composer("components.search-lg", function ($view) {
-            try {
-                $settings = app('settings');
-                $search_show_lg = $settings->get('search_show_lg', config('settings.search_show_lg')) ?? false;
-                $search_show_md = $settings->get('search_show_md', config('settings.search_show_md')) ?? false;
+        //View::composer("components.search-lg", function ($view) {
+            //try {
+
+                //$settings = app('settings');
+                //$search_show_lg = $settings->get('search_show_lg', config('settings.search_show_lg')) ?? false;
+                //$search_show_md = $settings->get('search_show_md', config('settings.search_show_md')) ?? false;
 
                 // Получить и передать все настройки поисковой системы
-                $config = app('search')->getAllConfigArray();
+                //$config = app('search')->getAllConfigArray();
 
-                $view->with([
-                    'globalSearchConfigJson'=> $config,
-                    'searchShowLg'          => $search_show_lg, // Показать поле поиска для устройств с шириной экрана 992 и более
-                    'searchShowMd'          => $search_show_md, // Показать поле поиска для устройств с шириной экрана менее 992
-                ]);
+                //$view->with([
+                    //'globalSearchConfigJson'=> $config,
+                    //'searchShowLg'          => $search_show_lg, // Показать поле поиска для устройств с шириной экрана 992 и более
+                    //'searchShowMd'          => $search_show_md, // Показать поле поиска для устройств с шириной экрана менее 992
+                //]);
 
-            } catch (\Exception $e) {
+            //} catch (\Exception $e) {
                 // Ошибку не показуем а тихо логируем
-                Log::error('Search view composer error', ['error' => $e]);
+                //Log::error('Search view composer error', ['error' => $e]);
 
                 // отправить даные во избежания ошибок
-                $view->with([
-                    'globalSearchConfigJson'=> [],
-                    'searchShowLg'     		=> false,
-                    'searchShowMd'     		=> false
-                ]);
-            }
-        });
+                //$view->with([
+                //    'globalSearchConfigJson'=> [],
+                //    'searchShowLg'     		=> false,
+                //    'searchShowMd'     		=> false
+                //]);
+            //}
+        //});
     }
 }

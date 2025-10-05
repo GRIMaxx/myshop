@@ -49,10 +49,9 @@ class TestController extends Controller
 
 
         //----------------------------------------------------------------
-        $store = app('settings')->get('store');
+        $store = $this->setting->get('store', config('store'));
         $title = 'Главная';
         $description = 'Добро пожаловать!';
-
         return view("stores.$store.home", compact('title','description'));
     }
 }

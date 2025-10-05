@@ -40,6 +40,18 @@
 
 </head>
 <body>
+    {{-- Глобальные переменные --}}
+    @php
+        // Получить даные для поисковой системы
+        // Да не совсем правильно бизнес логику сюда всавлять но это самый надежный способ получения данных
+        $search_show_lg = app('settings')->get('search_show_lg', config('settings.search_show_lg')) ?? false;
+        $search_show_md = app('settings')->get('search_show_md', config('settings.search_show_md')) ?? false;
+
+        $globalSearchConfigJson = app('search')->getAllConfigArray(
+            showLg: $search_show_lg,
+            showMd: $search_show_md,
+        );
+    @endphp
 
     <!-- Customizer offcanvas ----------------------------------------------------------------------->
     <x-customizer-offcanvas />

@@ -80,6 +80,7 @@ use Carbon\Carbon;
 
 class RedisCacheService implements CacheServiceInterface
 {
+    // Тип
     // Список префиксов для разных типов данных:
     // Для строгости чтобы знать что где будет.
     // type: <---
@@ -124,6 +125,7 @@ class RedisCacheService implements CacheServiceInterface
         'queue'			=> 'que',	// Данные очередей
     ];
 
+    // Сервис
     // Префиксы для разных названий сервисов или групп
     // Имена сервисов, моделей, контроллеров, и так далее
     // s_  - Имя сервиса добавляем суффикс
@@ -133,10 +135,11 @@ class RedisCacheService implements CacheServiceInterface
     public const PREFIXES = [
         //Тип (service)	Префикс	       Описание
 
-        'settings' 	=> 's_cfg',		// Сервис настройки всего сайта
-        'search' 	=> 's_srch',    // Сервис поисковой системы сайта
-        'filters' 	=> 's_flt',     // Сервис фильтры для поисковой системы сайта
-        'upload'    => 's_upl',     // Сервис обработки файлов
+        'meilisearch'   => 's_meilisearch',    // Сервис поисковой системы сайта - драйвер: meilisearch
+
+        'settings' 	    => 's_cfg',		        // Сервис настройки всего сайта
+        'filters' 	    => 's_flt',             // Сервис фильтры для поисковой системы сайта
+        'upload'        => 's_upl',             // Сервис обработки файлов
     ];
 
     /**

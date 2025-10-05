@@ -1,5 +1,9 @@
-{{-- Поле поиска > 991 px. --}}
-@if(isset($searchShowLg) && $searchShowLg)
+{{--
+    Поле поиска > 991 px.
+
+    Переменныеобьявляються здесь : .\resources\views\layouts\app.blade.php
+--}}
+@if(isset($search_show_lg) && $search_show_lg)
     <div
         id="search_lg"
         class="flex-fill d-none d-lg-block pe-4 pe-xl-5 desktop-search-wrapper"

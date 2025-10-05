@@ -3,7 +3,12 @@
  * Сохраненные даные:
  *
  * 1 Группа:
- *  theme_page, pwa, search_show_lg, search_show_md,
+ * theme_page,
+ * pwa,
+ * store,
+ * search_show_lg,
+ * search_show_md,
+ * search
  *
  *
  *
@@ -696,7 +701,7 @@ class SettingService implements SettingServiceInterface
 
             // 5. Если ключ не найден в БД
             if (!$meta) {
-                Log::error("Key '{$key}' not found in settings_registry", ['key' => $key]);
+                Log::error("Key '{$key}' not found in settings_registry ( Ошибка в ->.\app\Services\Setting\SettingService.php) ", ['key' => $key]);
                 return null;
             }
 

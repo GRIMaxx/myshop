@@ -9,7 +9,7 @@
 namespace App\Services\Search;
 
 use App\Contracts\Search\SearchServiceInterface;
-use App\Contracts\Cache\CacheServiceInterface;
+//use App\Contracts\Cache\CacheServiceInterface;
 use App\Contracts\Api\ResponseInterface;
 
 // -- Вспомогательные провайдеры с методами
@@ -20,16 +20,30 @@ use App\Services\Search\Helpers\RoutesProvider;
 use App\Services\Search\Helpers\TopDataProvider;
 use App\Services\Search\Helpers\TranslationsProvider;
 
+use Illuminate\Support\Facades\Log;
+
 //use Illuminate\Support\Facades\DB;
-//use Illuminate\Support\Facades\Log;
 //use App\Contracts\Cache\CacheServiceInterface;
 //use function App\Services\Setting\handleNotFound;
 class MeilisearchSearchService implements SearchServiceInterface
 {
+    /**
+     * Времменый кеш в рамках запроса.
+     * Request Cache (in-memory, внутри PHP-запроса)
+     **/
+    private static array $requestCache = [];
+
+    //private const CACHE_SERVICE = 'meilisearch';    // Имя сервиса
+    //private const CACHE_ROUTE   = 'routes';         // Тип данных - Маршруты
+    //private const CACHE_TRANS   = 'translations';   // Тип данных - Переводы
+    //private const CACHE_FILTER  = 'filter';         // Тип данных - Дефолтные данные фильтров
+    //private const CACHE_TTL     = 86400;            // Время жизни ключа
+
     public function __construct(
 
-        private CacheServiceInterface $cache,
+        //private CacheServiceInterface $cache,
         private ResponseInterface $response,
+
         private ConfigProvider $configProvider,
         private FiltersProvider $filtersProvider,
         private RoutesProvider $routesProvider,
@@ -37,12 +51,57 @@ class MeilisearchSearchService implements SearchServiceInterface
         private TranslationsProvider $translationsProvider
     ) {}
 
-    public function getAllConfigArray() : array  {
+    /**
+     * Получить все даные для поисковой системы.
+     * Метод запускаеться здесь: .\resources\views\layouts\app.blade в переменную --> $globalSearchConfigJson
+     * Да не лучшее место но зато запуск 1 раз + проверка
+     *
+     * Тут есь один нуанс чтобы не собирать даные вообще нудно отключить 2 поля из 2 пока так.
+    **/
+    public function getAllConfigArray($showLg = false, $showMd = false) : array  {
+        try {
 
-        //dd($this->cache);
+            $data = [];
 
+            if ($showLg || $showMd) {
 
-        return [1,2,3,4,5,6];
+                // Получить из временного кеша в рамках запроса
+                // Вернет весь массив и все полученные ранее данные если ключ имеет их
+                if (isset(self::$requestCache['data:meilisearch:configAll'])) {
+                    return self::$requestCache['data:meilisearch:configAll'];
+                }
+
+                // остановка здесь!
+
+                // Получить все нужные данные
+                // Полноценное кеширования в каждом из методов на местах для гипкости
+                // Например если где-то запрос не на все даные а только на определенные getAllConfiguration()
+                // Или если будет новая установка только конфиг даных нужно только вметоде getAllConfiguration удалить кеш и все...
+                $data = [
+                    'config' => $this->configProvider->getAllConfiguration(),
+                    //'routes'   => $this->routesProvider->getAllRoutes(),
+                    //'filters'  => $this->filtersProvider->getAllFilters(),
+                    //'tops'     => $this->topProvider->getTopItems(),
+                    //'buttons'  => $this->buttonsProvider->getDopButtons(),
+                    //'trans'    => $this->translationsProvider->getAllTranslations(),
+                ];
+
+                // Только временный кеш для одного запроса
+                self::$requestCache['data:meilisearch:configAll'] = $data;
+            }
+
+            return $data;
+
+       } catch (\Throwable $e) {
+            // Логируем на русском
+            Log::error("Ошибка при получении конфигурации поиска", [
+                'сообщение' => $e->getMessage(),
+                'trace'     => $e->getTraceAsString(),
+            ]);
+
+            // Возвращаем пустой массив, чтобы Blade не падал
+            return [];
+        }
     }
 
 
