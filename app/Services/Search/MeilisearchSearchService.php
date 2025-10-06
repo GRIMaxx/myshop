@@ -1,7 +1,6 @@
 <?php
 /**
- *
- *
+ * -- Поисковая система на ядре Meilisearch
  *
  *
  * .\components\search-lg.blade.php - Шаблон
@@ -9,7 +8,6 @@
 namespace App\Services\Search;
 
 use App\Contracts\Search\SearchServiceInterface;
-//use App\Contracts\Cache\CacheServiceInterface;
 use App\Contracts\Api\ResponseInterface;
 
 // -- Вспомогательные провайдеры с методами
@@ -19,12 +17,8 @@ use App\Services\Search\Helpers\FiltersProvider;
 use App\Services\Search\Helpers\RoutesProvider;
 use App\Services\Search\Helpers\TopDataProvider;
 use App\Services\Search\Helpers\TranslationsProvider;
-
 use Illuminate\Support\Facades\Log;
 
-//use Illuminate\Support\Facades\DB;
-//use App\Contracts\Cache\CacheServiceInterface;
-//use function App\Services\Setting\handleNotFound;
 class MeilisearchSearchService implements SearchServiceInterface
 {
     /**
@@ -33,17 +27,8 @@ class MeilisearchSearchService implements SearchServiceInterface
      **/
     private static array $requestCache = [];
 
-    //private const CACHE_SERVICE = 'meilisearch';    // Имя сервиса
-    //private const CACHE_ROUTE   = 'routes';         // Тип данных - Маршруты
-    //private const CACHE_TRANS   = 'translations';   // Тип данных - Переводы
-    //private const CACHE_FILTER  = 'filter';         // Тип данных - Дефолтные данные фильтров
-    //private const CACHE_TTL     = 86400;            // Время жизни ключа
-
     public function __construct(
-
-        //private CacheServiceInterface $cache,
         private ResponseInterface $response,
-
         private ConfigProvider $configProvider,
         private FiltersProvider $filtersProvider,
         private RoutesProvider $routesProvider,
@@ -55,6 +40,16 @@ class MeilisearchSearchService implements SearchServiceInterface
      * Получить все даные для поисковой системы.
      * Метод запускаеться здесь: .\resources\views\layouts\app.blade в переменную --> $globalSearchConfigJson
      * Да не лучшее место но зато запуск 1 раз + проверка
+     *
+     * -- Данный метод запрашуеться здесь:
+     *    .\resources\views\components\search-lg.blade.php
+     *    .\resources\views\components\search-md.blade.php
+     *
+     * -- Ключи кешей:
+     *    myshop:cache:cfg:s_meilisearch:config_all             - config
+     *    myshop:cache:rt:s_meilisearch:route_all               - routes
+     *    myshop:cache:i18n:s_meilisearch:trans_all             - trans
+     *    myshop:cache:flt:s_meilisearch:filter_all_visible     - filters
      *
      * Тут есь один нуанс чтобы не собирать даные вообще нудно отключить 2 поля из 2 пока так.
     **/
@@ -71,19 +66,19 @@ class MeilisearchSearchService implements SearchServiceInterface
                     return self::$requestCache['data:meilisearch:configAll'];
                 }
 
-                // остановка здесь!
-
-                // Получить все нужные данные
-                // Полноценное кеширования в каждом из методов на местах для гипкости
+                // Получить все данные
+                // Кеширование в каждом из методов на местах для гипкости.
                 // Например если где-то запрос не на все даные а только на определенные getAllConfiguration()
                 // Или если будет новая установка только конфиг даных нужно только вметоде getAllConfiguration удалить кеш и все...
+
+                //
                 $data = [
-                    'config' => $this->configProvider->getAllConfiguration(),
-                    //'routes'   => $this->routesProvider->getAllRoutes(),
-                    //'filters'  => $this->filtersProvider->getAllFilters(),
+                    'config'    => $this->configProvider->getAllConfiguration(),
+                    'routes'    => $this->routesProvider->getAllRoute(),
+                    'filters'  => $this->filtersProvider->getAllFilters(true),
                     //'tops'     => $this->topProvider->getTopItems(),
                     //'buttons'  => $this->buttonsProvider->getDopButtons(),
-                    //'trans'    => $this->translationsProvider->getAllTranslations(),
+                    'trans'    => $this->translationsProvider->getTranslations(),
                 ];
 
                 // Только временный кеш для одного запроса
@@ -103,11 +98,6 @@ class MeilisearchSearchService implements SearchServiceInterface
             return [];
         }
     }
-
-
-
-
-
 }
 
 /**

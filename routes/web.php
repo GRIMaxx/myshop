@@ -10,6 +10,9 @@ Route::controller(HomeController::class)->group(function () {
 
 });
 
+// Маршруты поисковой симстемы
+require __DIR__ . '/search.php';
+
 // -- Для тестов контроллер!
 Route::controller(TestController::class)->group(function () {
     Route::get('/test', 'index')->name('test');		// 	Главная страница

@@ -3,12 +3,15 @@
 
     Переменныеобьявляються здесь : .\resources\views\layouts\app.blade.php
 --}}
-@if(isset($search_show_lg) && $search_show_lg)
+@php
+// Test
+@endphp
+@if(isset($searchlg) && $searchlg)
     <div
         id="search_lg"
         class="flex-fill d-none d-lg-block pe-4 pe-xl-5 desktop-search-wrapper"
         data-component="search_lg"
-        data-props='@json($globalSearchConfigJson , JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)'
+        data-props='@json($globalSearchConfigJson)'
         data-device-type="desktop"
     ></div>
 @endif

@@ -1,16 +1,20 @@
-
+/**
+ * -- Обработка поиска для поля с размером более 991px
+ *
+ * -- Запрос направить сюда --> .\app\Services\Search\MeilisearchSearchService.php
+ * **/
 // Подключить стили
 import '@react_components/search/css/search.css'
 
-
-
-
 export default function search_lg(props = {}) {
+
+    
+
+
 
     console.log('search_lg', props);
 
     return (<h1>Test React</h1>);
-
 };
 
 /****

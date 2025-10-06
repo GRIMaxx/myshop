@@ -87,8 +87,9 @@
                 <!-- Правая часть -------------------------------------------------------------------->
                 {{--col-lg-9  изменил (для увиличения длинны поиска поля ) --}}
                 <div class="col col-lg-10 d-flex align-items-center justify-content-end">
+
                     <!-- Search visible on screens lg ------------------------------------------------>
-                    <x-search-lg />
+                    <x-search-lg :searchlg="$search_show_lg" :globalSearchConfigJson="$globalSearchConfigJson" />
                     <!-- End Search visible on screens lg -------------------------------------------->
 
                     <!-- Sale link visible on screens > 1200px wide (xl breakpoint) ------------------>

@@ -11,7 +11,7 @@ use App\Contracts\Setting\SettingServiceInterface;
 //
 class ConfigProvider
 {
-    private const CACHE_SERVICE  = 'meilisearch';   // Имя сервиса по умолчанию
+    private const CACHE_SERVICE = 'meilisearch';    // Имя сервиса по умолчанию
     private const CACHE_CONFIG  = 'config';         // Тип данных - настройки или конфиг данные
     private const CACHE_TTL     = 86400;            // Время жизни ключа
     private const CACHE_KEY     = 'config_all';     // Ключ для этого провайдера
