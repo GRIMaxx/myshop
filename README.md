@@ -37,7 +37,6 @@ It all depends on my free time, but I try to work with the code for about 7+ hou
 
 Дорогие друзья!
 
- Я перенес в дискуссии свои тесты и планы на сборку поискового механизма в другую вкладку Discussions она в шапке страницы или по ссылке: https://github.com/GRIMaxx/myshop/discussions  
+Я перенес в дискуссии свои тесты и планы на сборку поискового механизма в другую вкладку Discussions она в шапке страницы или по ссылке: https://github.com/GRIMaxx/myshop/discussions  
+Если кому интересна супер поисковая система не хуже --> (Walmart, Aliexpress,  Amazon и даже луче. ) 
 
-Если кому интересна супер поисковая система не хуже --> (Walmart, Aliexpress,  Amazon и даже луче. ) выше перейди на вкладку Discussions.
-Или по ссылке там я буду добавлять что сделано и так далее…
