@@ -251,4 +251,4 @@ Any other tokens or networks **will be permanently lost**.
 TANsgMvLpvVcn7AgspxzDPd2UkebdceeMM
 ```
 
-<img src="public/assets/img/QR-code.jpg" width="200" alt="QR code for donations">
+<img src="public/assets/img/QR-Code.jpg" width="200" alt="QR code for donations">
