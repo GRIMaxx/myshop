@@ -21,14 +21,13 @@
 ## 📚 **Current Focus: Building Autocomplete Step-by-Step**
 
 ### 🎯 **Learning Path (Active Development)**
-1. **[01. Introduction to Autocomplete](link)** - Concepts & why it's hard
-2. **[02. Data Synchronization](link)** ← **BUILDING NOW**
-3. [03. Index Configuration](link) - Coming soon
-4. [04. Search API & Logic](link) - Coming soon  
-5. [05. Frontend Integration](link) - Coming soon
+1. **[01. Introduction to Autocomplete](https://github.com/GRIMaxx/myshop/discussions)** - Concepts & why it's hard
+2. **[02. Data Synchronization](https://github.com/GRIMaxx/myshop/discussions)** ← **BUILDING NOW**
+3. [03. Index Configuration](https://github.com/GRIMaxx/myshop/discussions) - Coming soon
+4. [04. Search API & Logic](https://github.com/GRIMaxx/myshop/discussions) - Coming soon  
+5. [05. Frontend Integration](https://github.com/GRIMaxx/myshop/discussions) - Coming soon
 
-### 🏗️ **Autocomplete Architecture**by step.
-
+### 🏗️ **Autocomplete Architecture**
 ```text
 MySQL →
     Domain Events →
@@ -43,31 +42,33 @@ MySQL →
 
 ---
 
-## 🔧 **Technical Reference**
-- [📊 Architecture Diagrams](link) - Complete system visuals
-- [💻 Code Patterns & Decisions](link) - Why we chose this approach
-- [🎥 Video Demonstrations](link) - See it in action
-- [⚠️ Troubleshooting & Lessons](link) - Production problems solved
+### 🔧 Technical Reference
+
+- 📊 Architecture Diagrams - Complete system visuals
+- 💻 Code Patterns & Decisions - Why we chose this approach
+- 🎥 Video Demonstrations - See it in action
+- ⚠️ Troubleshooting & Lessons - Production problems solved
 
 ---
 
-## 👥 **Community & Progress**
-- **Join discussions:** Ask questions, share ideas
-- **Follow progress:** Weekly updates in Announcements
-- **Contribute:** Code, documentation, testing
+## 👥 Join the Learning Community! 🚀
 
-[Global Project Restructuring! New Discussions Concept](https://github.com/GRIMaxx/myshop/discussions)
+### 💬 Active Discussions Hub
+This project is now centered around GitHub Discussions where we're building everything publicly:
 
----
+[👉 Visit Discussions Hub](https://github.com/GRIMaxx/myshop/discussions)
 
-## 🚀 **Project Timeline**
+### 🎯 What's Happening in Discussions:
+**Step-by-step tutorials** with code examples
+**Video explanations** of complex architecture
+**Live Q&A** sessions and code reviews
+**Weekly progress updates** on autocomplete development
+**Community challenges** and practical assignments
 
-2025-Q4: ✅ Autocomplete sync system completed
-2026-Q1: 🔄 Building frontend & API layers
-2026-Q2: 🎯 Starting Real Search Engine development
+### 📢 Recent Announcement:
+[👉 Global Project Restructuring! New Discussions Concept]([https://github.com/GRIMaxx/myshop/discussions](https://github.com/GRIMaxx/myshop/discussions/28))
+We've completely redesigned this space as an educational hub for building search systems.
 
----
-**Goal:** Document the complete process of building production search systems, starting with autocomplete.
 
 
 
