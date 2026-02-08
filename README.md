@@ -6,21 +6,17 @@ Laravel · Redis Streams · MeiliSearch · Event-Driven Architecture
 
 ## This is NOT a search demo
 
-This repository documents how a **real-world search and autocomplete
-system** is **designed, evolved, and stress-tested under production
-constraints**.
+This repository documents how a **real-world autocomplete system**
+is designed, built, and validated under production constraints.
 
-The focus here is:
+The current focus is:
 
--   architecture
--   data flow
--   trade-offs
--   failure modes
--   system evolution
+- Autocomplete infrastructure (100% implemented)
+- Event-driven synchronization
+- Incremental indexing architecture
+- Real production design decisions
 
-Not frameworks.\
-Not quick integrations.\
-Not toy examples.
+This is NOT a toy integration or basic tutorial.
 
 ------------------------------------------------------------------------
 
@@ -47,6 +43,21 @@ Infrastructure overview:
 
 -   Redis Insight: https://youtu.be/DseAV2AoFbM
 -   Horizon / Meilisearch / PhpMyAdmin: https://youtu.be/aBYBvXBVono
+
+------------------------------------------------------------------------
+
+Key infrastructure:
+
+- Redis DB0 — Sessions
+- Redis DB1 — Cache
+- Redis DB2 — Queues
+- Redis DB3 — Streams (sync pipeline)
+
+Locking strategy:
+
+- Redis SETNX with TTL
+- Burst updates collapse into single job
+- Prevents reindex storms  
 
 ------------------------------------------------------------------------
 
@@ -126,6 +137,37 @@ This repository focuses on architecture and engineering approach.)*
          │ (Autocomplete) │
          └───────────────┘
 ```
+
+------------------------------------------------------------------------
+
+# System Scope
+
+The search system is split into two major domains:
+
+## 1. Autocomplete Engine (Completed)
+
+Includes:
+
+- synchronization between MySQL and MeiliSearch
+- indexing architecture
+- document transformers
+- dependency graph logic
+- validation and business rules
+- API layer
+- frontend rendering
+
+Autocomplete is fully functional and production-ready.
+
+## 2. Full Search Engine (Future)
+
+Planned:
+
+- ranking pipelines
+- advanced query logic
+- search UX optimization
+- extended indexing strategies
+
+Architecture already anticipates this expansion.
 
 ------------------------------------------------------------------------
 
