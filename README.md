@@ -70,6 +70,7 @@ It reflects real production thinking:
 
 ## High-Level Architecture
 
+```php
 MySQL (Domain Data)
 ↓
 Domain Events (Observers)
@@ -85,7 +86,7 @@ MeiliSearch Indexes
 Search / Autocomplete API
 ↓
 Frontend (React)
-
+```
 
 ---
 
