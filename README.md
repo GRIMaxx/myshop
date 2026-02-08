@@ -280,7 +280,6 @@ Personal Note
 
 ## Architecture Diagram
 
-```text
 🗄️ MySQL / PhpMyAdmin
 │
 ▼
@@ -322,7 +321,7 @@ Personal Note
 ▼
 🌐 API / Frontend
 └─ Autocomplete Results
-```
+
 
 
 
