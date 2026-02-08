@@ -158,30 +158,29 @@ It reflects real production thinking:
 
 ## High-Level Architecture
 
-``` php
-MySQL
+```text
+MySQL (PhpMyadmin)
 ↓
-Models
+Domain Layer: Models, Observers, Dispatcher, Pipeline
 ↓
-Observers (emit domain event)
+Redis:
+    - Streams (updates_stream)
+    - Queues (Horizon)
+    - Cache & Sessions
 ↓
-IndexIntentBuilder
+Consumer Groups: ConsumeUpdates
 ↓
-RedisStreamPublisher
+Locking: SETNX-based, idempotent processing
 ↓
-Redis Streams
+Index Brain: MeiliIntentRouter, Dependency Graph
 ↓
-StreamConsumer
+Transformers & Document Builders
 ↓
-IndexDependencyGraph
+Queue Layer (Isolated Jobs)
 ↓
-IntentRouter
+MeiliSearch Indexes (autocomplete_* for suggestions)
 ↓
-Queue Jobs (Isolated Indexing Workers)
-↓
-MeiliSearch
-↓
-Search / Autocomplete API
+Search API (autocomplete)
 ↓
 Frontend (React)
 ```
