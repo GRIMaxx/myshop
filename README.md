@@ -160,6 +160,16 @@ Frontend (React)
 
 ------------------------------------------------------------------------
 
+## Engineering Highlights
+
+- Event-driven indexing pipeline
+- Redis Streams with idempotent consumers
+- Dependency graph for partial reindex
+- Lock-based rebuild deduplication
+- Separate autocomplete/search pipelines
+
+------------------------------------------------------------------------
+
 ### Search Index Design
 
 -   Dedicated transformers per entity type
