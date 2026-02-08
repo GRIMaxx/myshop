@@ -55,6 +55,80 @@ This repository focuses on architecture and engineering approach.)*
 
 ------------------------------------------------------------------------
 
+## Architecture Diagram
+
+```text
+                 ┌─────────────┐
+                 │  MySQL /    │
+                 │ PhpMyadmin  │
+                 └─────┬───────┘
+                       │
+                       ▼
+                 ┌─────────────┐
+                 │ Domain Layer│
+                 │ Models,     │
+                 │ Observers,  │
+                 │ Dispatcher, │
+                 │ Pipeline    │
+                 └─────┬───────┘
+                       │
+                       ▼
+             ┌───────────────────────┐
+             │        Redis          │
+             │ Streams / Queues /   │
+             │ Cache / Sessions     │
+             └─────┬─────────────────┘
+                   │
+                   ▼
+          ┌─────────────────────┐
+          │ Consumer Groups:    │
+          │ ConsumeUpdates      │
+          └─────┬───────────────┘
+                │
+                ▼
+         ┌───────────────┐
+         │ Locking       │
+         │ (SETNX / 5s) │
+         └─────┬─────────┘
+               │
+               ▼
+         ┌───────────────┐
+         │ Index Brain    │
+         │ MeiliIntent    │
+         │ Router         │
+         │ Dependency     │
+         │ Graph          │
+         └─────┬─────────┘
+               │
+               ▼
+         ┌───────────────┐
+         │ Transformers &│
+         │ Document      │
+         │ Builders      │
+         └─────┬─────────┘
+               │
+               ▼
+         ┌───────────────┐
+         │ Queue Layer    │
+         │ (Horizon Jobs) │
+         └─────┬─────────┘
+               │
+               ▼
+         ┌───────────────┐
+         │ MeiliSearch    │
+         │ Indexes        │
+         │ autocomplete_* │
+         └─────┬─────────┘
+               │
+               ▼
+         ┌───────────────┐
+         │ API / Frontend │
+         │ (Autocomplete) │
+         └───────────────┘
+```
+
+------------------------------------------------------------------------
+
 ## Problems this project addresses
 
 -   Preventing **reindex storms** under burst updates
