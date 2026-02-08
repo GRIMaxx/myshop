@@ -1,31 +1,89 @@
-# 🚀 Build Autocomplete from Scratch
+# 🔍 Building a Search Engine from Scratch
 
-**Production-ready autocomplete system with Laravel, Redis Streams & MeiliSearch**
-
-## 🎯 Current Focus: Data Synchronization
-We're currently building **Step 2: Reliable data sync** from MySQL to MeiliSearch.
-
-### 📚 Learning Path:
-1. **[01. Introduction & Concepts](link)** - What we're building
-2. **[02. Data Synchronization](link)** ← **YOU ARE HERE**
-3. [03. Indexing Configuration](link) - Coming soon
-4. [04. Search API](link) - Coming soon
-5. [05. Frontend Integration](link) - Coming soon
-
-## 🏗️ Architecture
-
-```text
-MySQL → Domain Events → Redis Streams → Consumer Groups → MeiliIntentRouter → Transformers → MeiliSearch → API → Frontend
-```
-
-## 🔧 Technical Reference
-- [Architecture Diagrams](link)
-- [Code Patterns](link)
-- [Video Demos](link)
-- [Troubleshooting](link)
-
-## 💬 Community
-Join discussions, ask questions, share progress.
+**A complete open-source journey through search system architecture**
 
 ---
-**Goal:** Build a complete autocomplete system, step by step.
+
+## 🎯 **Two Independent Systems, One Codebase**
+
+### **1. ✅ Autocomplete System** ← **CURRENTLY BUILDING**
+**Status:** Core synchronization complete • Frontend ready  
+**What it does:** Real-time query suggestions as you type  
+**Tech stack:** Laravel, Redis Streams, MeiliSearch, React
+
+### **2. 🚧 Real Search Engine** ← **FUTURE PHASE**
+**Status:** In planning • Code prototypes exist  
+**What it will do:** Full-text search with ranking & facets  
+**Tech stack:** [MeiliSearch/Elasticsearch], Advanced ranking algorithms
+
+---
+
+## 📚 **Current Focus: Building Autocomplete Step-by-Step**
+
+### 🎯 **Learning Path (Active Development)**
+1. **[01. Introduction to Autocomplete](link)** - Concepts & why it's hard
+2. **[02. Data Synchronization](link)** ← **BUILDING NOW**
+3. [03. Index Configuration](link) - Coming soon
+4. [04. Search API & Logic](link) - Coming soon  
+5. [05. Frontend Integration](link) - Coming soon
+
+### 🏗️ **Autocomplete Architecture**by step.
+
+```text
+MySQL →
+    Domain Events →
+        Redis Streams →
+            Consumer Groups →
+                MeiliIntentRouter →
+                    Transformers →
+                        MeiliSearch →
+                            API →
+                                React Frontend
+```
+
+---
+
+## 🔧 **Technical Reference**
+- [📊 Architecture Diagrams](link) - Complete system visuals
+- [💻 Code Patterns & Decisions](link) - Why we chose this approach
+- [🎥 Video Demonstrations](link) - See it in action
+- [⚠️ Troubleshooting & Lessons](link) - Production problems solved
+
+---
+
+## 👥 **Community & Progress**
+- **Join discussions:** Ask questions, share ideas
+- **Follow progress:** Weekly updates in Announcements
+- **Contribute:** Code, documentation, testing
+
+---
+
+## 🚀 **Project Timeline**
+
+2025-Q4: ✅ Autocomplete sync system completed
+2026-Q1: 🔄 Building frontend & API layers
+2026-Q2: 🎯 Starting Real Search Engine development
+
+---
+**Goal:** Document the complete process of building production search systems, starting with autocomplete.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
