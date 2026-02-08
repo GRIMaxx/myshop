@@ -12,7 +12,7 @@ Laravel · Redis Streams · MeiliSearch · Event-Driven Architecture
 
 ------------------------------------------------------------------------
 
-## Architecture Diagram (Visual)
+## Architecture Diagram (->)
 
 ```text
 MySQL (PhpMyAdmin)
@@ -48,7 +48,7 @@ Search / Autocomplete API
 Frontend (React)
 ```
 
-## Architecture Diagram
+## Architecture Diagram (Visual)
 
 ```text
 🗄️  MySQL / PhpMyAdmin
