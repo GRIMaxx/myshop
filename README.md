@@ -21,11 +21,11 @@
 ## 📚 **Current Focus: Building Autocomplete Step-by-Step**
 
 ### 🎯 **Learning Path (Active Development)**
-1. **[01. Introduction to Autocomplete](https://github.com/GRIMaxx/myshop/discussions)** - Concepts & why it's hard
-2. **[02. Data Synchronization](https://github.com/GRIMaxx/myshop/discussions)** ← **BUILDING NOW**
-3. [03. Index Configuration](https://github.com/GRIMaxx/myshop/discussions) - Coming soon
-4. [04. Search API & Logic](https://github.com/GRIMaxx/myshop/discussions) - Coming soon  
-5. [05. Frontend Integration](https://github.com/GRIMaxx/myshop/discussions) - Coming soon
+1. **[01. Introduction & Big Picture](https://github.com/GRIMaxx/myshop/discussions/categories/introduction-big-picture)** - Core concepts & why it's hard
+2. **[02. Data Storage & Architecture](https://github.com/GRIMaxx/myshop/discussions/categories/data-storage-architecture)** - Database design & system structure
+3. **[03. Data Synchronization](https://github.com/GRIMaxx/myshop/discussions/categories/data-synchronization)** ← **BUILDING NOW**
+4. **[04. Indexing & Search Logic](https://github.com/GRIMaxx/myshop/discussions/categories/indexing-search-logic)** - Coming soon
+5. **[05. Frontend & UI](https://github.com/GRIMaxx/myshop/discussions/categories/frontend-ui)** - Coming soon
 
 ### 🏗️ **Autocomplete Architecture**
 ```text
@@ -44,10 +44,10 @@ MySQL →
 
 ### 🔧 Technical Reference
 
-- **[📊 Architecture Diagrams](https://github.com/GRIMaxx/myshop/discussions)** - Complete system visuals
-- 💻 Code Patterns & Decisions - Why we chose this approach
-- **[🎥 Video Demonstrations](https://github.com/GRIMaxx/myshop/discussions)** - See it in action
-- ⚠️ Troubleshooting & Lessons - Production problems solved
+- **[📊 System Components](https://github.com/GRIMaxx/myshop/discussions/categories/system-components)** - Detailed architecture breakdown
+- **[💻 Code Examples](https://github.com/GRIMaxx/myshop/discussions/categories/code-examples)** - Implementation patterns & decisions
+- **[🎥 Video Library](https://github.com/GRIMaxx/myshop/discussions/categories/video-library)** - All tutorials & demonstrations
+- **[⚠️ Troubleshooting](https://github.com/GRIMaxx/myshop/discussions/categories/troubleshooting)** - Production problems & solutions
 
 ---
 
