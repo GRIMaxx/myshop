@@ -56,7 +56,7 @@ MySQL →
 ### 💬 Active Discussions Hub
 This project is now centered around GitHub Discussions where we're building everything publicly:
 
-[👉 Visit Discussions Hub](https://github.com/GRIMaxx/myshop/discussions)
+**[👉 Visit Discussions Hub](https://github.com/GRIMaxx/myshop/discussions)**
 
 ### 🎯 What's Happening in Discussions:
 **Step-by-step tutorials** with code examples
@@ -67,7 +67,35 @@ This project is now centered around GitHub Discussions where we're building ever
 
 ### 📢 Recent Announcement:
 **[👉 Global Project Restructuring! New Discussions Concept](https://github.com/GRIMaxx/myshop/discussions/28)**
-We've completely redesigned this space as an educational hub for building search systems.
+***We've completely redesigned this space as an educational hub for building search systems.***
+
+### 🎓 How to Get Involved:
+1. Browse the Learning Path categories
+2. Watch the repository to get notifications
+3. Ask questions in any discussion thread
+4. Share your own implementations and ideas
+5. Follow along as we build in public
+
+---
+
+### 🚀 Project Timeline
+
+```text
+2025-Q4: ✅ Autocomplete sync system completed
+2026-Q1: 🔄 Building frontend & API layers
+2026-Q2: 🎯 Starting Real Search Engine development
+```
+
+---
+
+### 📍 Live Project Status
+**Autocomplete System: 🟢 Active Development** (Step 2/5 - Data Synchronization)
+**Real Search Engine: 🟡 In Planning** (Starting Q2 2026)
+
+**[🔔 Follow Announcements for Real Search Engine launch]([https://github.com/GRIMaxx/myshop/discussions](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates))**
+
+
+
 
 
 
