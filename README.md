@@ -44,7 +44,7 @@ MySQL →
 
 ### 🔧 Technical Reference
 
-- 📊 Architecture Diagrams - Complete system visuals
+- **[📊 Architecture Diagrams](https://github.com/GRIMaxx/myshop/discussions)** - Complete system visuals
 - 💻 Code Patterns & Decisions - Why we chose this approach
 - 🎥 Video Demonstrations - See it in action
 - ⚠️ Troubleshooting & Lessons - Production problems solved
