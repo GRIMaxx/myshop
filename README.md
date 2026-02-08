@@ -14,7 +14,7 @@
 ### **2. 🚧 Real Search Engine** ← **FUTURE PHASE**
 **Status:** In planning • Code prototypes exist  
 **What it will do:** Full-text search with ranking & facets  
-**Tech stack:** [MeiliSearch/Elasticsearch], Advanced ranking algorithms
+**Tech stack:** [MeiliSearch], Advanced ranking algorithms
 
 ---
 
