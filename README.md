@@ -66,7 +66,7 @@ This project is now centered around GitHub Discussions where we're building ever
 **Community challenges** and practical assignments
 
 ### 📢 Recent Announcement:
-[👉 Global Project Restructuring! New Discussions Concept]([https://github.com/GRIMaxx/myshop/discussions](https://github.com/GRIMaxx/myshop/discussions/28))
+[👉 Global Project Restructuring! New Discussions Concept](https://github.com/GRIMaxx/myshop/discussions/28))
 We've completely redesigned this space as an educational hub for building search systems.
 
 
