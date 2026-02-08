@@ -41,7 +41,7 @@ Laravel 12 project file structure demo: [https://youtu.be/WlKlPhlQNAU](https://y
 
 ---
 
-*(The full backend implementation is private. This repository focuses on architecture.)*
+*(The full backend implementation is branches private. This repository focuses on architecture.)*
 
 ---
 
