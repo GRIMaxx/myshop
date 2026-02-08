@@ -300,4 +300,5 @@ Any other tokens or networks will be permanently lost.
 ``` php
 TANsgMvLpvVcn7AgspxzDPd2UkebdceeMM
 ```
-<img src="public/assets/img/QR-Code.jpg" width="200" alt="QR code for donations">
+
+<img src="public/assets/img/QR-Code.jpg" width="200" alt="Support the project via USDT TRC20">
