@@ -251,6 +251,7 @@ If this project is useful, you can support its development.
 **Address / Адрес:**
 ```text
 TANsgMvLpvVcn7AgspxzDPd2UkebdceeMM
+```
 <img src="public/assets/img/QR-Code.jpg" width="200" alt="QR code for donations">
 
 ---
