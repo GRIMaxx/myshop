@@ -48,6 +48,65 @@ Search / Autocomplete API
 Frontend (React)
 ```
 
+## Architecture Diagram
+
+```text
+🗄️  MySQL / PhpMyAdmin
+    │
+    ▼
+📦  Domain Layer
+    ├─ Models
+    ├─ Observers
+    ├─ Dispatcher
+    └─ Pipeline
+    │
+    ▼
+🟦  Redis
+    ├─ Streams
+    ├─ Queues
+    ├─ Cache
+    └─ Sessions
+    │
+    ▼
+👥  Consumer Groups
+    └─ ConsumeUpdates
+    │
+    ▼
+🔒  Locking (SETNX / 5s)
+    │
+    ▼
+🧠  Index Brain
+    ├─ MeiliIntentRouter
+    └─ Dependency Graph
+    │
+    ▼
+⚙️  Transformers & Document Builders
+    │
+    ▼
+📤  Queue Layer (Horizon Jobs)
+    │
+    ▼
+📚  MeiliSearch Indexes
+    └─ autocomplete_*
+    │
+    ▼
+🌐  API / Frontend
+    └─ Autocomplete Results
+```
+
+💡 Notes:
+
+- 🗄️ MySQL / PhpMyAdmin – source of domain data
+- 📦 Domain Layer – Models, Observers, Dispatcher, Pipeline
+- 🟦 Redis – Streams, Queues, Cache, Sessions
+- 👥 Consumer Groups – ConsumeUpdates, reliable processing
+- 🔒 Locking – SETNX ensures idempotent job creation
+- 🧠 Index Brain – MeiliIntentRouter + Dependency Graph
+- ⚙️ Transformers – Build document structures with status checks
+- 📤 Queue Layer – Horizon jobs, dedicated queues for heavy indexing
+- 📚 MeiliSearch Indexes – autocomplete_* indexes, separate per entity
+- 🌐 Frontend / API – Autocomplete results delivery
+
 ------------------------------------------------------------------------
 
 ## This is NOT a search demo
@@ -278,64 +337,3 @@ Personal Note
 Все демонстрации видео и посты поэтапно
 
 ------------------------------------------------------------------------
-
-## Architecture Diagram
-
-```text
-🗄️ MySQL / PhpMyAdmin
-│
-▼
-📦 Domain Layer
-├─ Models
-├─ Observers
-├─ Dispatcher
-└─ Pipeline
-│
-▼
-🟦 Redis
-├─ Streams
-├─ Queues
-├─ Cache
-└─ Sessions
-│
-▼
-👥 Consumer Groups
-└─ ConsumeUpdates
-│
-▼
-🔒 Locking (SETNX / 5s)
-│
-▼
-🧠 Index Brain
-├─ MeiliIntentRouter
-└─ Dependency Graph
-│
-▼
-⚙️ Transformers & Document Builders
-│
-▼
-📤 Queue Layer (Horizon Jobs)
-│
-▼
-📚 MeiliSearch Indexes
-└─ autocomplete_*
-│
-▼
-🌐 API / Frontend
-└─ Autocomplete Results
-```
-
-------------------------------------------------------------------------
-
-💡 Пояснения:  
-
-- 🗄️ **MySQL** – источник всех данных  
-- 📦 **Domain Layer** – модели, события, pipeline  
-- 🟦 **Redis** – очереди, кэш, сессии, стримы  
-- 👥 **Consumer Groups** – гарантированная доставка, idempotent handling  
-- 🔒 **Locking** – предотвращение дублирования джоб  
-- 🧠 **Index Brain** – мозг системы, router + dependency graph  
-- ⚙️ **Transformers** – сборка документа по правилам, проверки верификации  
-- 📤 **Queue Layer** – Horizon, отдельные очереди для тяжелых задач  
-- 📚 **MeiliSearch Indexes** – отдельные autocomplete индексы  
-- 🌐 **Frontend / API** – автоподсказки для пользователей  
