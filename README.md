@@ -56,6 +56,8 @@ MySQL →
 - **Follow progress:** Weekly updates in Announcements
 - **Contribute:** Code, documentation, testing
 
+[Troubleshooting & Lessons]([link](https://github.com/GRIMaxx/myshop/discussions)) - 🚀 Global Project Restructuring! New Discussions Concept
+
 ---
 
 ## 🚀 **Project Timeline**
