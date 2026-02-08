@@ -46,7 +46,7 @@ MySQL →
 
 - **[📊 Architecture Diagrams](https://github.com/GRIMaxx/myshop/discussions)** - Complete system visuals
 - 💻 Code Patterns & Decisions - Why we chose this approach
-- 🎥 Video Demonstrations - See it in action
+- **[🎥 Video Demonstrations](https://github.com/GRIMaxx/myshop/discussions)** - See it in action
 - ⚠️ Troubleshooting & Lessons - Production problems solved
 
 ---
