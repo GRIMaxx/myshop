@@ -73,13 +73,25 @@ It reflects real production thinking:
 ```php
 MySQL (Domain Data)
 ↓
+Model
+↓
 Domain Events (Observers)
 ↓
-Redis Streams (Event Log)
+Dispatcher
 ↓
-Idempotent Stream Consumers
+Pipeline
+↓
+RedisStreamService
+↓
+Redis Streams (Redis)
+↓
+Idempotent Stream Consumers (worker)
+↓
+MeiliIntentRouter (Brain)
 ↓
 Isolated Queue Jobs (Indexing)
+↓
+...
 ↓
 MeiliSearch Indexes
 ↓
