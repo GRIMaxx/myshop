@@ -300,7 +300,9 @@ Example topics:
 - *Why autocomplete is not search*
 - *Why per-index limits matter*
 - *Why fallback UX is a product decision*
-
+- **How to create from scratch**
+    - *1. Discussions - step-by-step assembly*
+    - *1. Video - step-by-step assembly* 
 ------------------------------------------------------------------------
 
 ## Donate / Support
