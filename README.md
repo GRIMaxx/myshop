@@ -2,7 +2,7 @@
 
 Laravel · Redis Streams · MeiliSearch · Event-Driven Architecture
 
----
+------------------------------------------------------------------------
 
 ## Architecture Diagram (Visual)
 
@@ -10,7 +10,7 @@ Laravel · Redis Streams · MeiliSearch · Event-Driven Architecture
 
 Laravel · Redis Streams · MeiliSearch · Event-Driven Architecture
 
----
+------------------------------------------------------------------------
 
 ## Architecture Diagram (Visual)
 
@@ -48,7 +48,7 @@ Search / Autocomplete API
 Frontend (React)
 ```
 
----
+------------------------------------------------------------------------
 
 ## This is NOT a search demo
 
@@ -65,7 +65,7 @@ Not frameworks.
 Not quick integrations.  
 Not toy examples.
 
----
+------------------------------------------------------------------------
 
 ## Demo (real frontend, real data)
 
@@ -76,20 +76,20 @@ This short video shows how autocomplete behaves in practice:
 
 Watch demo (frontend autocomplete in action): [https://youtu.be/t_PeFxUbrv4](https://youtu.be/t_PeFxUbrv4)
 
----
+------------------------------------------------------------------------
 
 Laravel 12 project file structure demo: [https://youtu.be/WlKlPhlQNAU](https://youtu.be/WlKlPhlQNAU)
 
----
+------------------------------------------------------------------------
 
 - Redis Insight: [https://youtu.be/DseAV2AoFbM](https://youtu.be/DseAV2AoFbM)
 - Horizon/Meilisearch/PhpMyadmin: [https://youtu.be/aBYBvXBVono](https://youtu.be/aBYBvXBVono)
 
----
+------------------------------------------------------------------------
 
 *(Full backend code is private. This repo focuses on architecture and logic.)*
 
----
+------------------------------------------------------------------------
 
 ## Problems this project addresses
 
@@ -99,7 +99,7 @@ Laravel 12 project file structure demo: [https://youtu.be/WlKlPhlQNAU](https://y
 - Avoiding **over-fetching and wasted ranking work**
 - Keeping latency **predictable under load**
 
----
+------------------------------------------------------------------------
 
 ## Project Goal
 
@@ -112,7 +112,7 @@ Emphasis:
 - debuggable behavior
 - controlled failure recovery
 
----
+------------------------------------------------------------------------
 
 ## 🔑 Core Concepts
 
@@ -152,7 +152,7 @@ Emphasis:
 - Alias and normalization handling
 - Separate autocomplete indexes (brands, products, sellers, shops, categories)
 
----
+------------------------------------------------------------------------
 
 ## Autocomplete System Modules
 
@@ -163,7 +163,7 @@ Emphasis:
 
 > Currently only **Synchronization** is fully demonstrated (most complex part)
 
----
+------------------------------------------------------------------------
 
 ## Source & Infrastructure Details
 
@@ -182,7 +182,7 @@ Emphasis:
 - **Queue Layer**: Horizon, Isolated indexing queues
 - **Frontend**: React + autocomplete fields
 
----
+------------------------------------------------------------------------
 
 ## File Structure (Key Files)
 
@@ -229,7 +229,7 @@ app/Services/Search/
 │ └─ ShopSource.php
 ```
 
----
+------------------------------------------------------------------------
 
 ## Engineering Diary (Design Discussions)
 
@@ -241,7 +241,7 @@ Example topics:
 - *Why per-index limits matter*
 - *Why fallback UX is a product decision*
 
----
+------------------------------------------------------------------------
 
 ## Donate / Support
 
@@ -254,7 +254,7 @@ TANsgMvLpvVcn7AgspxzDPd2UkebdceeMM
 ```
 <img src="public/assets/img/QR-Code.jpg" width="200" alt="QR code for donations">
 
----
+------------------------------------------------------------------------
 
 Personal Note
 
@@ -266,7 +266,7 @@ Personal Note
     - behave predictably under load
     - This repo is a technical statement, not a marketing demo.
 
----
+------------------------------------------------------------------------
 
 🇷🇺 Кратко по-русски
 
@@ -277,7 +277,7 @@ Personal Note
 Подробное объяснение логики, бизнес-проверок и зависимостей
 Все демонстрации видео и посты поэтапно
 
----
+------------------------------------------------------------------------
 
 ## Architecture Diagram
 
@@ -325,7 +325,7 @@ Personal Note
 └─ Autocomplete Results
 ```
 
----
+------------------------------------------------------------------------
 
 💡 Пояснения:  
 
@@ -339,62 +339,3 @@ Personal Note
 - 📤 **Queue Layer** – Horizon, отдельные очереди для тяжелых задач  
 - 📚 **MeiliSearch Indexes** – отдельные autocomplete индексы  
 - 🌐 **Frontend / API** – автоподсказки для пользователей  
-
----
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
