@@ -96,12 +96,12 @@ This project is now centered around GitHub Discussions where we're building ever
 + 🚀 AUTOCOMPLETE SYSTEM: ACTIVE DEVELOPMENT
 ! Current Phase: Data Synchronization (Step 2/5)
 # Started: February 2026 • Target: Q1 2026 Complete
-> Follow: [Development Updates](link) • [View Progress](link)
+> Follow: [Development Updates](Будет ссылка) • [View Progress](Будет ссылка)
 
 - 🏗️ REAL SEARCH ENGINE: IN PLANNING
 ! Status: Architecture Design Phase
 # Planned Start: Q2 2026
-> Contribute: [Share Ideas](link) • [View Roadmap](link)
+> Contribute: [Share Ideas](Будет ссылка) • [View Roadmap](Будет ссылка)
 ```
 
 **🔔 Follow** [Announcements](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates) for Real Search Engine launch
