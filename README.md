@@ -48,6 +48,7 @@ MySQL →
 - **[💻 Code Examples](https://github.com/GRIMaxx/myshop/discussions/categories/code-examples)** - Implementation patterns & decisions
 - **[🎥 Video Library](https://github.com/GRIMaxx/myshop/discussions/categories/video-library)** - All tutorials & demonstrations
 - **[⚠️ Troubleshooting](https://github.com/GRIMaxx/myshop/discussions/categories/troubleshooting)** - Production problems & solutions
+- **[🏗️ Architecture Context](https://github.com/GRIMaxx/myshop/discussions/categories/architecture-diagrams)** - For visual reference, see
 
 ---
 
