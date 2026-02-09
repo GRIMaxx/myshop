@@ -102,6 +102,7 @@ This project is now centered around GitHub Discussions where we're building ever
 ! Status: Architecture Design Phase
 # Planned Start: Q2 2026
 > Contribute: [Share Ideas](link) • [View Roadmap](link)
+```
 
 **🔔 Follow** [Announcements](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates) for Real Search Engine launch
 
