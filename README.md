@@ -71,11 +71,11 @@ Ask questions in Q&A
 Share ideas in Ideas & Suggestions
 Report issues in Bug Reports
 
-1. **[Browse ]**the(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates) - Critical changes & releases
-2. **[Watch]**(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
-3. **[Ask questions in]**(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
-4. **[Share ideas in]**(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
-5. **[Report issues in]**(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
+1. [**Browse** the](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates) categories
+2. **Watch** the repository to get notifications
+3. [**Ask questions** in](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)
+4. [**Share ideas** in](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)
+5. [**Report issues** in](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)
 
 
 
