@@ -56,7 +56,28 @@ MySQL →
 ### 💬 Active Discussions Hub
 This project is now centered around GitHub Discussions where we're building everything publicly:
 
-**[👉 Visit Discussions Hub](https://github.com/GRIMaxx/myshop/discussions)**
+**[👉 Start Learning Here](https://github.com/GRIMaxx/myshop/discussions/categories/learning-path-start-here)**
+
+## 📢 Project Announcements
+
+- **[🔔 Important Updates](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
+- **[🗺️ Development Plans](https://github.com/GRIMaxx/myshop/discussions/categories/development-plans)** - Roadmaps & upcoming features
+- **[📚 News Archive](https://github.com/GRIMaxx/myshop/discussions/categories/news-archive)** - Historical updates
+
+## 🎓 How to Get Involved:
+Browse the Learning Path categories
+Watch the repository to get notifications
+Ask questions in Q&A
+Share ideas in Ideas & Suggestions
+Report issues in Bug Reports
+
+1. **[Browse ]**the(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates) - Critical changes & releases
+2. **[Watch]**(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
+3. **[Ask questions in]**(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
+4. **[Share ideas in]**(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
+5. **[Report issues in]**(https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)** - Critical changes & releases
+
+
 
 ### 🎯 What's Happening in Discussions:
 **Step-by-step tutorials** with code examples
