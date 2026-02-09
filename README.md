@@ -65,37 +65,16 @@ This project is now centered around GitHub Discussions where we're building ever
 - **[📚 News Archive](https://github.com/GRIMaxx/myshop/discussions/categories/news-archive)** - Historical updates
 
 ## 🎓 How to Get Involved:
-Browse the Learning Path categories
-Watch the repository to get notifications
-Ask questions in Q&A
-Share ideas in Ideas & Suggestions
-Report issues in Bug Reports
 
-1. [**Browse** the](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates) categories
+1. **Browse** the [Learning Path](https://github.com/GRIMaxx/myshop/discussions/categories/learning-path-start-here) categories
 2. **Watch** the repository to get notifications
-3. [**Ask questions** in](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)
-4. [**Share ideas** in](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)
-5. [**Report issues** in](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)
+3. **Ask questions** in [Q&A](https://github.com/GRIMaxx/myshop/discussions/categories/q-a)
+4. **Share ideas** in [Ideas & Suggestions](https://github.com/GRIMaxx/myshop/discussions/categories/ideas-suggestions)
+5. **Report issues** in [Bug Reports](https://github.com/GRIMaxx/myshop/discussions/categories/bug-reports)
 
-
-
-### 🎯 What's Happening in Discussions:
-**Step-by-step tutorials** with code examples
-**Video explanations** of complex architecture
-**Live Q&A** sessions and code reviews
-**Weekly progress updates** on autocomplete development
-**Community challenges** and practical assignments
-
-### 📢 Recent Announcement:
-**[👉 Global Project Restructuring! New Discussions Concept](https://github.com/GRIMaxx/myshop/discussions/28)**
+## 🔄 Recent Restructuring:
+**[👉 Global Project Restructuring! New Discussions Concept](https://github.com/GRIMaxx/myshop/discussions/29)**
 ***We've completely redesigned this space as an educational hub for building search systems.***
-
-### 🎓 How to Get Involved:
-1. Browse the Learning Path categories
-2. Watch the repository to get notifications
-3. Ask questions in any discussion thread
-4. Share your own implementations and ideas
-5. Follow along as we build in public
 
 ---
 
@@ -109,11 +88,11 @@ Report issues in Bug Reports
 
 ---
 
-### 📍 Live Project Status
-**Autocomplete System: 🟢 Active Development** (Step 2/5 - Data Synchronization)
+## 📍 Live Project Status
+**Autocomplete System: 🟢 Active Development** (Step 3/5 - Data Synchronization)
 **Real Search Engine: 🟡 In Planning** (Starting Q2 2026)
 
-**[🔔 Follow Announcements for Real Search Engine launch](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates)**
+**🔔 Follow** [Announcements](https://github.com/GRIMaxx/myshop/discussions/categories/important-updates) for Real Search Engine launch
 
 ---
 
